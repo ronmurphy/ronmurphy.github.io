@@ -1,0 +1,2152 @@
+<html lang="en">
+
+<!-- Mirrored from caisual.com/games/nf6odou0vu3wfd0o/index.html?unique_id=nf6odou0vu3wfd0o&roomId=&id=&userId=Anon-7oQeX by HTTrack Website Copier/3.x [XR&CO'2014], Sun, 01 Sep 2024 21:47:09 GMT -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Character Sheet</title>
+    <meta name="description" content="Interactive Dungeons & Dragons character sheet generator with customizable layouts and dice rolling.">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --text-color: #ecf0f1;
+            --accent-color: #e74c3c;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow: auto;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: var(--secondary-color);
+            padding: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .top-bar button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .page-content {
+            margin-top: 60px;
+            padding: 20px;
+            position: relative;
+            min-height: calc(100vh - 60px);
+        }
+
+        .page-element {
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: absolute;
+        }
+
+        .attributes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .attribute-button {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .attribute-button .asm-value {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 14px;
+        }
+
+        .attribute-button .attribute-name {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+        }
+
+        .attribute-button .dice-icon {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+        }
+
+        .selector {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+        }
+
+        .skills {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .skill-button {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--accent-color);
+            padding: 10px;
+            margin: 5px 0;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .dice-results {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(44, 62, 80, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1001;
+            display: none;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1002;
+            display: none;
+        }
+
+        .grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: linear-gradient(to right, rgba(173, 216, 230, 0.1) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(173, 216, 230, 0.1) 1px, transparent 1px);
+            background-size: 16px 16px;
+            pointer-events: none;
+            display: none;
+        }
+
+        .edit-mode .page-element {
+            border: 2px dashed var(--accent-color);
+        }
+
+        .grid-mode .page-element {
+            border: 2px dashed var(--accent-color);
+        }
+
+        .resize-handle {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-color);
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            cursor: se-resize;
+            display: none;
+        }
+
+        .edit-mode .resize-handle {
+            display: block;
+        }
+
+        .remove-element {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .edit-mode .remove-element {
+            display: block;
+        }
+
+        .lock-element {
+            position: absolute;
+            left: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .grid-mode .lock-element {
+            display: block;
+        }
+
+        .portbox {
+            width: 128px;
+            height: 128px;
+            background-color: var(--secondary-color);
+            border: 2px solid var(--accent-color);
+            overflow: hidden;
+        }
+
+        .portbox img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .help-box, .palette-chooser, .image-chooser, .background-options, .settings-conf {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 5px;
+            z-index: 1003;
+            display: none;
+        }
+
+        .help-box .close-btn, .palette-chooser .close-btn, .image-chooser .close-btn, .background-options .close-btn, .settings-conf .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+        }
+
+        .magic-sheet {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .magic-sheet .spell-level {
+            margin-bottom: 10px;
+        }
+
+        .magic-sheet textarea {
+            width: 100%;
+            height: 100px;
+            resize: vertical;
+        }
+
+        .background-history {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .background-history textarea {
+            width: 100%;
+            height: 100px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+
+        .hit-points, .ac, .init {
+            display: flex;
+            align-items: center;
+        }
+
+        .hit-points input, .ac input, .init input {
+            width: 50px;
+            margin-left: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .spell-slots {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+        }
+
+        .spell-slots input {
+            width: 30px;
+            text-align: center;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .action-row select, .action-row button, .action-row input {
+            flex: 1;
+            margin-right: 5px;
+        }
+
+        .action-row .remove-action {
+            flex: 0 0 auto;
+            cursor: pointer;
+        }
+
+        .attribute-roller {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 5px;
+            z-index: 1004;
+            display: none;
+        }
+
+        .attribute-roller button {
+            margin: 5px;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .image-chooser button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .background-options select, .background-options input {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .background-options button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .element-picker-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+            z-index: 1005;
+        }
+
+        .element-chooser {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 5px;
+            z-index: 1006;
+            display: none;
+        }
+
+        .element-chooser select, .element-chooser input[type="checkbox"] {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .element-chooser button {
+            margin-right: 10px;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .palette-chooser {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .palette-chooser select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .palette-preview {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .palette-color {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #000;
+        }
+
+        .palette-chooser button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .death-save {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .death-save input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .inspiration {
+            display: flex;
+            align-items: center;
+        }
+
+        .inspiration .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            opacity: 0.5;
+        }
+
+        .meta-button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @keyframes confetti {
+            0% { transform: translateY(0) rotateZ(0); opacity: 1; }
+            100% { transform: translateY(1000px) rotateZ(720deg); opacity: 0; }
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f0f0f0;
+            position: absolute;
+            top: -10px;
+            z-index: 9999;
+        }
+
+        .skull {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            z-index: 9999;
+            display: none;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .rainbow-background {
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+            background-size: 200% 200%;
+            animation: rainbow 5s ease infinite;
+        }
+
+        .meta-ape-shape {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .meta-ape-shape button {
+            flex: 1;
+            margin-right: 5px;
+        }
+
+        .settings-conf {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .settings-conf button {
+            margin: 5px 0;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .top-bar {
+                flex-direction: column;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 60px;
+            }
+
+            .page-content {
+                margin-left: 70px;
+                margin-top: 10px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .top-bar {
+                top: auto;
+                bottom: 0;
+            }
+
+            .page-content {
+                margin-bottom: 60px;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button id="rlayout-btn" title="Random Layout">🎲</button>
+        <button id="save-btn" title="Save">💾</button>
+        <button id="folder-btn" title="Load">📂</button>
+        <button id="layout-btn" title="Edit Layout">🖌️</button>
+        <button id="grid-btn" title="Grid Mode">🔗</button>
+        <button id="pal-btn" title="Change Palette">🎨</button>
+        <button id="pic-btn" title="Change Images">🖼️</button>
+        <button id="help-btn" title="Help">❓</button>
+        <button id="settings-btn" title="Settings">⚙️</button>
+    </div>
+
+    <div class="page-content">
+        <div class="grid"></div>
+
+        <div class="page-element attributes" id="attributes">
+            <div class="attribute-button" data-attribute="strength">
+                <span class="asm-value">+0</span>
+                <span class="dice-icon">🎲</span>
+                10
+                <span class="attribute-name">STR</span>
+            </div>
+            <div class="attribute-button" data-attribute="dexterity">
+                <span class="asm-value">+0</span>
+                <span class="dice-icon">🎲</span>
+                10
+                <span class="attribute-name">DEX</span>
+            </div>
+            <div class="attribute-button" data-attribute="constitution">
+                <span class="asm-value">+0</span>
+                <span class="dice-icon">🎲</span>
+                10
+                <span class="attribute-name">CON</span>
+            </div>
+            <div class="attribute-button" data-attribute="intelligence">
+                <span class="asm-value">+0</span>
+                <span class="dice-icon">🎲</span>
+                10
+                <span class="attribute-name">INT</span>
+            </div>
+            <div class="attribute-button" data-attribute="wisdom">
+                <span class="asm-value">+0</span>
+                <span class="dice-icon">🎲</span>
+                10
+                <span class="attribute-name">WIS</span>
+            </div>
+            <div class="attribute-button" data-attribute="charisma">
+                <span class="asm-value">+0</span>
+                <span class="dice-icon">🎲</span>
+                10
+                <span class="attribute-name">CHA</span>
+            </div>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element">
+            <select id="race-selector" class="selector">
+                <option value="">Select Race</option>
+                <option value="dragonborn">Dragonborn</option>
+                <option value="dwarf">Dwarf</option>
+                <option value="elf">Elf</option>
+                <option value="gnome">Gnome</option>
+                <option value="half-elf">Half-Elf</option>
+                <option value="halfling">Halfling</option>
+                <option value="half-orc">Half-Orc</option>
+                <option value="human">Human</option>
+                <option value="tiefling">Tiefling</option>
+            </select>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element">
+            <select id="class-selector" class="selector">
+                <option value="">Select Class</option>
+                <option value="barbarian">Barbarian</option>
+                <option value="bard">Bard</option>
+                <option value="cleric">Cleric</option>
+                <option value="druid">Druid</option>
+                <option value="fighter">Fighter</option>
+                <option value="monk">Monk</option>
+                <option value="paladin">Paladin</option>
+                <option value="ranger">Ranger</option>
+                <option value="rogue">Rogue</option>
+                <option value="sorcerer">Sorcerer</option>
+                <option value="warlock">Warlock</option>
+                <option value="wizard">Wizard</option>
+            </select>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element skills" id="all-skills">
+            <button class="skill-button" data-skill="acrobatics" data-attribute="dexterity">Acrobatics - Dexterity [+0]</button>
+            <button class="skill-button" data-skill="animalHandling" data-attribute="wisdom">Animal Handling - Wisdom [+0]</button>
+            <button class="skill-button" data-skill="arcana" data-attribute="intelligence">Arcana - Intelligence [+0]</button>
+            <button class="skill-button" data-skill="athletics" data-attribute="strength">Athletics - Strength [+0]</button>
+            <button class="skill-button" data-skill="deception" data-attribute="charisma">Deception - Charisma [+0]</button>
+            <button class="skill-button" data-skill="history" data-attribute="intelligence">History - Intelligence [+0]</button>
+            <button class="skill-button" data-skill="insight" data-attribute="wisdom">Insight - Wisdom [+0]</button>
+            <button class="skill-button" data-skill="intimidation" data-attribute="charisma">Intimidation - Charisma [+0]</button>
+            <button class="skill-button" data-skill="investigation" data-attribute="intelligence">Investigation - Intelligence [+0]</button>
+            <button class="skill-button" data-skill="medicine" data-attribute="wisdom">Medicine - Wisdom [+0]</button>
+            <button class="skill-button" data-skill="nature" data-attribute="intelligence">Nature - Intelligence [+0]</button>
+            <button class="skill-button" data-skill="perception" data-attribute="wisdom">Perception - Wisdom [+0]</button>
+            <button class="skill-button" data-skill="performance" data-attribute="charisma">Performance - Charisma [+0]</button>
+            <button class="skill-button" data-skill="persuasion" data-attribute="charisma">Persuasion - Charisma [+0]</button>
+            <button class="skill-button" data-skill="religion" data-attribute="intelligence">Religion - Intelligence [+0]</button>
+            <button class="skill-button" data-skill="sleightOfHand" data-attribute="dexterity">Sleight of Hand - Dexterity [+0]</button>
+            <button class="skill-button" data-skill="stealth" data-attribute="dexterity">Stealth - Dexterity [+0]</button>
+            <button class="skill-button" data-skill="survival" data-attribute="wisdom">Survival - Wisdom [+0]</button>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element portbox" id="portbox">
+            <img src="#" alt="Character Portrait">
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element magic-sheet" id="magic-sheet">
+            <div class="spell-level">
+                <h3>Cantrips</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>1st Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>2nd Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>3rd Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>4th Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>5th Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>6th Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>7th Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>8th Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="spell-level">
+                <h3>9th Level</h3>
+                <textarea></textarea>
+            </div>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element background-history" id="background-history">
+            <textarea placeholder="Background"></textarea>
+            <textarea placeholder="Personality Traits"></textarea>
+            <textarea placeholder="Ideals"></textarea>
+            <textarea placeholder="Bonds"></textarea>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element hit-points" id="hit-points">
+            <label for="hp">Hit Points:</label>
+            <input type="number" id="hp" min="0">
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element ac" id="ac">
+            <label for="ac-value">Armor Class:</label>
+            <input type="number" id="ac-value" readonly>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element init" id="init">
+            <label for="init-value">Initiative:</label>
+            <input type="number" id="init-value" readonly>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element rest" id="rest">
+            <label for="rest-toggle">Rest:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="rest-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element advantage" id="advantage">
+            <label for="advantage-toggle">Advantage:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="advantage-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element spell-slots" id="spell-slots">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <input type="number" min="0" max="9">
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element actions" id="actions">
+            <div class="action-row">
+                <select>
+                    <option value="">Select Weapon</option>
+                    <option value="club">Club</option>
+                    <option value="dagger">Dagger</option>
+                    <option value="greatclub">Greatclub</option>
+                    <option value="handaxe">Handaxe</option>
+                    <option value="javelin">Javelin</option>
+                    <option value="light-hammer">Light Hammer</option>
+                    <option value="mace">Mace</option>
+                    <option value="quarterstaff">Quarterstaff</option>
+                    <option value="sickle">Sickle</option>
+                    <option value="spear">Spear</option>
+                    <option value="light-crossbow">Light Crossbow</option>
+                    <option value="dart">Dart</option>
+                    <option value="shortbow">Shortbow</option>
+                    <option value="sling">Sling</option>
+                    <option value="battleaxe">Battleaxe</option>
+                    <option value="flail">Flail</option>
+                    <option value="glaive">Glaive</option>
+                    <option value="greataxe">Greataxe</option>
+                    <option value="greatsword">Greatsword</option>
+                    <option value="halberd">Halberd</option>
+                    <option value="lance">Lance</option>
+                    <option value="longsword">Longsword</option>
+                    <option value="maul">Maul</option>
+                    <option value="morningstar">Morningstar</option>
+                    <option value="pike">Pike</option>
+                    <option value="rapier">Rapier</option>
+                    <option value="scimitar">Scimitar</option>
+                    <option value="shortsword">Shortsword</option>
+                    <option value="trident">Trident</option>
+                    <option value="war-pick">War Pick</option>
+                    <option value="warhammer">Warhammer</option>
+                    <option value="whip">Whip</option>
+                    <option value="blowgun">Blowgun</option>
+                    <option value="hand-crossbow">Hand Crossbow</option>
+                    <option value="heavy-crossbow">Heavy Crossbow</option>
+                    <option value="longbow">Longbow</option>
+                    <option value="net">Net</option>
+                </select>
+                <button class="dex-mod">+0</button>
+                <input type="text" placeholder="Notes">
+                <span class="add-action">➕</span>
+            </div>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element attribute-button" data-attribute="strength">
+            <span class="asm-value">+0</span><span class="dice-icon">🎲</span>
+            10
+            <span class="attribute-name">STR</span>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element attribute-button" data-attribute="dexterity">
+            <span class="asm-value">+0</span>
+            <span class="dice-icon">🎲</span>
+            10
+            <span class="attribute-name">DEX</span>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element attribute-button" data-attribute="intelligence">
+            <span class="asm-value">+0</span>
+            <span class="dice-icon">🎲</span>
+            10
+            <span class="attribute-name">INT</span>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element attribute-button" data-attribute="wisdom">
+            <span class="asm-value">+0</span>
+            <span class="dice-icon">🎲</span>
+            10
+            <span class="attribute-name">WIS</span>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element attribute-button" data-attribute="constitution">
+            <span class="asm-value">+0</span>
+            <span class="dice-icon">🎲</span>
+            10
+            <span class="attribute-name">CON</span>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element attribute-button" data-attribute="charisma">
+            <span class="asm-value">+0</span>
+            <span class="dice-icon">🎲</span>
+            10
+            <span class="attribute-name">CHA</span>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element death-save" id="death-save">
+            <label>Death Saves:</label>
+            <input type="checkbox">
+            <input type="checkbox">
+            <input type="checkbox">
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element inspiration" id="inspiration">
+            <label for="inspiration-toggle">Inspiration:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="inspiration-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element meta-button" id="meta-reduce-borders">
+            Reduce Borders
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element meta-button" id="meta-rainbow">
+            Rainbow Background
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element meta-button" id="meta-cats">
+            Cat Background
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element meta-button" id="meta-skulls">
+            💀 skull mode
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+
+        <div class="page-element meta-ape-shape" id="meta-ape-shape">
+            <button id="shape-btn">Shape: circle</button>
+            <button id="remove-shape-btn">❌</button>
+            <div class="resize-handle"></div>
+            <button class="remove-element">⭕</button>
+            <button class="lock-element">🔒</button>
+        </div>
+    </div>
+
+    <div class="dice-results" id="dice-results"></div>
+    <div class="notification" id="notification"></div>
+    <div class="skull" id="skull">💀</div>
+
+    <div class="help-box" id="help-box">
+        <span class="close-btn">❌</span>
+        <h2>Help</h2>
+        <ul>
+            <li>🎲 - Random Layout: Generate a random character sheet layout</li>
+            <li>💾 - Save: Save the current character sheet</li>
+            <li>📂 - Load: Load a saved character sheet</li>
+            <li>🖌️ - Edit Layout: Toggle edit mode to move and resize elements</li>
+            <li>🔗 - Grid Mode: Toggle grid mode for precise element placement</li>
+            <li>🎨 - Change Palette: Choose a different color scheme</li>
+            <li>🖼️ - Change Images: Update character portrait and background</li>
+            <li>❓ - Help: Show this help menu</li>
+            <li>⚙️ - Settings: Open settings menu</li>
+        </ul>
+    </div>
+
+    <div class="palette-chooser" id="palette-chooser">
+        <span class="close-btn">❌</span>
+        <h2>Choose Palette</h2>
+        <select id="palette-selector">
+            <option value="default">Default</option>
+            <option value="forest">Forest</option>
+            <option value="ocean">Ocean</option>
+            <option value="desert">Desert</option>
+            <option value="night">Night</option>
+            <option value="sunset">Sunset</option>
+            <option value="autumn">Autumn</option>
+            <option value="spring">Spring</option>
+            <option value="winter">Winter</option>
+            <option value="summer">Summer</option>
+            <option value="lavender">Lavender</option>
+            <option value="cherry-blossom">Cherry Blossom</option>
+            <option value="emerald">Emerald</option>
+            <option value="amethyst">Amethyst</option>
+            <option value="ruby">Ruby</option>
+            <option value="sapphire">Sapphire</option>
+            <option value="topaz">Topaz</option>
+            <option value="peridot">Peridot</option>
+            <option value="aquamarine">Aquamarine</option>
+            <option value="garnet">Garnet</option>
+            <option value="opal">Opal</option>
+            <option value="onyx">Onyx</option>
+            <option value="pearl">Pearl</option>
+            <option value="obsidian">Obsidian</option>
+            <option value="amber">Amber</option>
+            <option value="jade">Jade</option>
+            <option value="coral">Coral</option>
+            <option value="turquoise">Turquoise</option>
+            <option value="malachite">Malachite</option>
+            <option value="lapis-lazuli">Lapis Lazuli</option>
+            <option value="moonstone">Moonstone</option>
+            <option value="sunstone">Sunstone</option>
+            <option value="citrine">Citrine</option>
+            <option value="tanzanite">Tanzanite</option>
+            <option value="alexandrite">Alexandrite</option>
+            <option value="agate">Agate</option>
+            <option value="bloodstone">Bloodstone</option>
+            <option value="chrysoprase">Chrysoprase</option>
+            <option value="zircon">Zircon</option>
+            <option value="jasper">Jasper</option>
+            <option value="aventurine">Aventurine</option>
+            <option value="carnelian">Carnelian</option>
+            <option value="chrysocolla">Chrysocolla</option>
+            <option value="fluorite">Fluorite</option>
+            <option value="hematite">Hematite</option>
+            <option value="kunzite">Kunzite</option>
+            <option value="labradorite">Labradorite</option>
+            <option value="rhodonite">Rhodonite</option>
+            <option value="sodalite">Sodalite</option>
+            <option value="tiger-eye">Tiger Eye</option>
+        </select>
+        <div class="palette-preview">
+            <div class="palette-color" id="primary-color"></div>
+            <div class="palette-color" id="secondary-color"></div>
+            <div class="palette-color" id="text-color"></div>
+            <div class="palette-color" id="accent-color"></div>
+        </div>
+        <button id="apply-palette">Apply</button>
+        <button id="cancel-palette">Cancel</button>
+    </div>
+
+    <div class="attribute-roller" id="attribute-roller">
+        <h2>Roll for Attribute</h2>
+        <button class="roll-button"></button>
+        <button class="roll-button"></button>
+        <button class="roll-button"></button>
+    </div>
+
+    <div class="image-chooser" id="image-chooser">
+        <span class="close-btn">❌</span>
+        <h2>Choose Image</h2>
+        <button id="portrait-btn">Portrait</button>
+        <button id="background-btn">Background</button>
+    </div>
+
+    <div class="background-options" id="background-options">
+        <span class="close-btn">❌</span>
+        <h2>Background Options</h2>
+        <select id="background-position">
+            <option value="behind-everything">Behind Everything</option>
+            <option value="behind-elements">Behind Page Elements</option>
+        </select>
+        <input type="number" id="transparency" value="90" min="0" max="100">
+        <button id="apply-background">Save</button>
+    </div>
+
+    <button class="element-picker-button" id="element-picker-btn">➕</button>
+
+    <div class="element-chooser" id="element-chooser">
+        <h2>Choose Element</h2>
+        <select id="element-selector">
+            <option value="attributes">Attributes</option>
+            <option value="race-selector">Race Selector</option>
+            <option value="class-selector">Class Selector</option>
+            <option value="all-skills">All Skills</option>
+            <option value="portbox">Portrait Box</option>
+            <option value="magic-sheet">Magic Sheet</option>
+            <option value="background-history">Background History</option>
+            <option value="hit-points">Hit Points</option>
+            <option value="ac">Armor Class</option>
+            <option value="init">Initiative</option>
+            <option value="rest">Rest Toggle</option>
+            <option value="advantage">Advantage Toggle</option>
+            <option value="spell-slots">Spell Slots</option>
+            <option value="actions">Actions</option>
+            <option value="single-attribute">Single Attribute</option>
+            <option value="death-save">Death Save</option>
+            <option value="inspiration">Inspiration</option>
+            <option value="meta-reduce-borders">Meta: Reduce Borders</option>
+            <option value="meta-rainbow">Meta: Rainbow Background</option>
+            <option value="meta-cats">Meta: Cat Background</option>
+            <option value="meta-skulls">Meta: Skull Mode</option>
+            <option value="meta-ape-shape">Meta: APE Shape</option>
+        </select>
+        <label>
+            <input type="checkbox" id="use-clean-sheet"> Use Clean Sheet
+        </label>
+        <button id="add-element-btn">Add to Sheet</button>
+        <button id="close-element-chooser">Close</button>
+    </div>
+
+    <div class="settings-conf" id="settings-conf">
+        <span class="close-btn">❌</span>
+        <h2>Settings</h2>
+        <button id="mt-button">Layout Type: Phone</button>
+        <button id="stats-assign-btn">Stats: Not Assigned</button>
+    </div>
+
+    <script src="../../../cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
+    <script>
+        const attributes = {
+            strength: 10,
+            dexterity: 10,
+            constitution: 10,
+            intelligence: 10,
+            wisdom: 10,
+            charisma: 10
+        };
+
+        const skills = {
+            acrobatics: { attribute: 'dexterity' },
+            animalHandling: { attribute: 'wisdom' },
+            arcana: { attribute: 'intelligence'},
+            athletics: { attribute: 'strength' },
+            deception: { attribute: 'charisma' },
+            history: { attribute: 'intelligence' },
+            insight: { attribute: 'wisdom' },
+            intimidation: { attribute: 'charisma' },
+            investigation: { attribute: 'intelligence' },
+            medicine: { attribute: 'wisdom' },
+            nature: { attribute: 'intelligence' },
+            perception: { attribute: 'wisdom' },
+            performance: { attribute: 'charisma' },
+            persuasion: { attribute: 'charisma' },
+            religion: { attribute: 'intelligence' },
+            sleightOfHand: { attribute: 'dexterity' },
+            stealth: { attribute: 'dexterity' },
+            survival: { attribute: 'wisdom' }
+        };
+
+        const races = {
+            human: { strength: 1, dexterity: 1, constitution: 1, intelligence: 1, wisdom: 1, charisma: 1 },
+            elf: { dexterity: 2 },
+            dwarf: { constitution: 2 },
+            halfling: { dexterity: 2 },
+            dragonborn: { strength: 2, charisma: 1 },
+            gnome: { intelligence: 2 },
+            "half-elf": { charisma: 2 },
+            "half-orc": { strength: 2, constitution: 1 },
+            tiefling: { intelligence: 1, charisma: 2 }
+        };
+
+        const classes = {
+            fighter: { strength: 1, constitution: 1 },
+            wizard: { intelligence: 2 },
+            rogue: { dexterity: 2 },
+            cleric: { wisdom: 2 },
+            paladin: { strength: 1, charisma: 1 },
+            barbarian: { strength: 2, constitution: 1 },
+            bard: { charisma: 2 },
+            druid: { wisdom: 2 },
+            monk: { dexterity: 1, wisdom: 1 },
+            ranger: { dexterity: 1, wisdom: 1 },
+            sorcerer: { charisma: 2 },
+            warlock: { charisma: 2 }
+        };
+
+        let isEditMode = false;
+        let isGridMode = false;
+        let layoutType = 'Phone';
+        let boolHasStats = false;
+
+        function updateAttributeDisplay() {
+            for (const [attribute, value] of Object.entries(attributes)) {
+                const buttons = document.querySelectorAll(`.attribute-button[data-attribute="${attribute}"]`);
+                buttons.forEach(button => {
+                    button.innerHTML = `
+                        <span class="asm-value">${getASMValue(value)}</span>
+                        <span class="dice-icon">${button.dataset.boolHasStats === 'false' ? '🎲' : ''}</span>
+                        ${value}
+                        <span class="attribute-name">${attribute.substring(0, 3).toUpperCase()}</span>
+                    `;
+                });
+            }
+            updateSkillDisplay();
+            updateDerivedStats();
+        }
+
+        function updateSkillDisplay() {
+            for (const [skill, data] of Object.entries(skills)) {
+                const button = document.querySelector(`.skill-button[data-skill="${skill}"]`);
+                const attributeValue = attributes[data.attribute];
+                const asmValue = getASMValue(attributeValue);
+                button.textContent = `${skill.charAt(0).toUpperCase() + skill.slice(1)} - ${data.attribute.charAt(0).toUpperCase() + data.attribute.slice(1)} [${asmValue}]`;
+            }
+        }
+
+        function updateDerivedStats() {
+            const acValue = 10 + getASMValue(attributes.dexterity);
+            document.getElementById('ac-value').value = acValue;
+
+            let initValue = getASMValue(attributes.dexterity);
+            const selectedClass = document.getElementById('class-selector').value;
+            if (selectedClass === 'monk') {
+                initValue += getASMValue(attributes.wisdom);
+            } else if (selectedClass === 'barbarian') {
+                initValue += getASMValue(attributes.constitution);
+            }
+            document.getElementById('init-value').value = initValue;
+
+            document.querySelectorAll('.dex-mod').forEach(button => {
+                button.textContent = getASMValue(attributes.dexterity);
+            });
+        }
+
+        function getASMValue(score) {
+            if (score <= 1) return -5;
+            if (score <= 3) return -4;
+            if (score <= 5) return -3;
+            if (score <= 7) return -2;
+            if (score <= 9) return -1;
+            if (score <= 11) return 0;
+            if (score <= 13) return 1;
+            if (score <= 15) return 2;
+            if (score <= 17) return 3;
+            if (score <= 19) return 4;
+            if (score <= 21) return 5;
+            if (score <= 23) return 6;
+            if (score <= 25) return 7;
+            if (score <= 27) return 8;
+            if (score <= 29) return 9;
+            return 10;
+        }
+
+        function rollDice(sides) {
+            return Math.floor(Math.random() * sides) + 1;
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function addToDiceResults(result) {
+            const diceResults = document.getElementById('dice-results');
+            const resultElement = document.createElement('div');
+            resultElement.textContent = result;
+            diceResults.appendChild(resultElement);
+            diceResults.style.display = 'block';
+            setTimeout(() => {
+                diceResults.removeChild(resultElement);
+                if (diceResults.childElementCount === 0) {
+                    diceResults.style.display = 'none';
+                }
+            }, 5000);
+
+            if (result.includes('d20') && result.endsWith('20')) {
+                showConfetti();
+            } else if (result.includes('d20') && result.endsWith('1')) {
+                showSkull();
+            }
+        }
+
+        function showConfetti() {
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * window.innerWidth + 'px';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.animation = `confetti ${Math.random() * 3 + 2}s linear`;
+                document.body.appendChild(confetti);
+                setTimeout(() => {
+                    document.body.removeChild(confetti);
+                }, 5000);
+            }
+        }
+
+        function showSkull() {
+            const skull = document.getElementById('skull');
+            skull.style.display = 'block';
+            setTimeout(() => {
+                skull.style.display = 'none';
+            }, 3000);
+        }
+
+        document.querySelectorAll('.attribute-button').forEach(button => {
+            button.dataset.boolHasStats = 'false';
+            button.addEventListener('click', (e) => {
+                const attribute = e.currentTarget.dataset.attribute;
+                if (isEditMode) {
+                    if (e.currentTarget.dataset.boolHasStats === 'false') {
+                        showAttributeRoller(attribute);
+                    }
+                } else {
+                    const score = attributes[attribute];
+                    const asmValue = getASMValue(score);
+                    const roll = rollDice(20);
+                    const total = roll + asmValue;
+                    const result = `${attribute.charAt(0).toUpperCase() + attribute.slice(1)}: ${roll} + ${asmValue} = ${total}`;
+                    showNotification(result);
+                    addToDiceResults(result);
+                }
+            });
+        });
+
+        function showAttributeRoller(attribute) {
+            const roller = document.getElementById('attribute-roller');
+            roller.style.display = 'block';
+            const buttons = roller.querySelectorAll('.roll-button');
+            buttons.forEach(button => {
+                const roll1 = rollDice(6);
+                const roll2 = rollDice(6);
+                const roll3 = rollDice(6);
+                const sum = roll1 + roll2 + roll3;
+                button.textContent = `${sum} (${roll1}, ${roll2}, ${roll3})`;
+                button.onclick = () => {
+                    attributes[attribute] = sum;
+                    const attributeButton = document.querySelector(`.attribute-button[data-attribute="${attribute}"]`);
+                    attributeButton.dataset.boolHasStats = 'true';
+                    updateAttributeDisplay();
+                    roller.style.display = 'none';
+                };
+            });
+        }
+
+        document.getElementById('all-skills').addEventListener('click', (e) => {
+            if (e.target.classList.contains('skill-button')) {
+                const skill = e.target.dataset.skill;
+                const attribute = skills[skill].attribute;
+                const asmValue = getASMValue(attributes[attribute]);
+                const roll = rollDice(20);
+                const total = roll + asmValue;
+                const result = `${skill.charAt(0).toUpperCase() + skill.slice(1)}: ${roll} + ${asmValue} = ${total}`;
+                showNotification(result);
+                addToDiceResults(result);
+            }
+        });
+
+        document.getElementById('race-selector').addEventListener('change', (e) => {
+            const selectedRace = e.target.value;
+            if (races[selectedRace]){
+                for (const [attribute, bonus] of Object.entries(races[selectedRace])) {
+                    attributes[attribute] += bonus;
+                }
+                updateAttributeDisplay();
+            }
+        });
+
+        document.getElementById('class-selector').addEventListener('change', (e) => {
+            const selectedClass = e.target.value;
+            if (classes[selectedClass]) {
+                for (const [attribute, bonus] of Object.entries(classes[selectedClass])) {
+                    attributes[attribute] += bonus;
+                }
+                updateAttributeDisplay();
+            }
+        });
+
+        document.getElementById('layout-btn').addEventListener('click', () => {
+            isEditMode = !isEditMode;
+            document.getElementById('layout-btn').style.backgroundColor = isEditMode ? 'yellow' : '';
+            document.body.classList.toggle('edit-mode', isEditMode);
+            toggleElementPickerButton();
+        });
+
+        document.getElementById('grid-btn').addEventListener('click', () => {
+            isGridMode = !isGridMode;
+            document.getElementById('grid-btn').style.backgroundColor = isGridMode ? 'green' : '';
+            document.body.classList.toggle('grid-mode', isGridMode);
+            document.querySelector('.grid').style.display = isGridMode ? 'block' : 'none';
+            document.body.style.overflow = isGridMode ? 'hidden' : 'auto';
+            toggleElementPickerButton();
+        });
+
+        function toggleElementPickerButton() {
+            const elementPickerButton = document.getElementById('element-picker-btn');
+            
+            if (isEditMode || isGridMode) {
+                elementPickerButton.style.display = 'block';
+            } else {
+                elementPickerButton.style.display = 'none';
+            }
+        }
+
+        interact('.page-element')
+            .draggable({
+                inertia: true,
+                modifiers: [
+                    interact.modifiers.snap({
+                        targets: [
+                            interact.createSnapGrid({ x: 16, y: 16 })
+                        ],
+                        range: Infinity,
+                        relativePoints: [ { x: 0, y: 0 } ]
+                    }),
+                    interact.modifiers.restrict({
+                        restriction: 'parent',
+                        elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
+                        endOnly: true
+                    })
+                ],
+                autoScroll: true,
+                listeners: {
+                    move: dragMoveListener,
+                }
+            })
+            .resizable({
+                edges: { left: true, right: true, bottom: true, top: true },
+                listeners: {
+                    move: resizeMoveListener,
+                },
+                modifiers: [
+                    interact.modifiers.restrictEdges({
+                        outer: 'parent'
+                    }),
+                    interact.modifiers.restrictSize({
+                        min: { width: 100, height: 50 },
+                    })
+                ],
+            });
+
+        function dragMoveListener(event) {
+            if (!isEditMode && !isGridMode) return;
+            const target = event.target;
+            const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+            const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+            target.style.transform = `translate(${x}px, ${y}px)`;
+            target.setAttribute('data-x', x);
+            target.setAttribute('data-y', y);
+        }
+
+        function resizeMoveListener(event) {
+            if (!isEditMode) return;
+            const target = event.target;
+            let x = (parseFloat(target.getAttribute('data-x')) || 0);
+            let y = (parseFloat(target.getAttribute('data-y')) || 0);
+
+            target.style.width = `${event.rect.width}px`;
+            target.style.height = `${event.rect.height}px`;
+
+            x += event.deltaRect.left;
+            y += event.deltaRect.top;
+
+            target.style.transform = `translate(${x}px, ${y}px)`;
+
+            target.setAttribute('data-x', x);
+            target.setAttribute('data-y', y);
+        }
+
+        document.getElementById('rlayout-btn').addEventListener('click', () => {
+            clearPage();
+            const layouts = ['minimal', 'text-information', 'block-style', 'sound-everything', 'website', 'modern', 'old-style', 'artsy', 'minimal', 'full-of-information'];
+            const randomLayout = layouts[Math.floor(Math.random() * layouts.length)];
+            applyLayout(randomLayout);
+        });
+
+        function clearPage() {
+            const pageElements = document.querySelectorAll('.page-element');
+            pageElements.forEach(element => element.remove());
+            document.body.style.backgroundImage = '';
+            document.querySelector('.page-content').style.backgroundImage = '';
+        }
+
+        function applyLayout(layout) {
+            // Add mandatory elements
+            addPageElement('attributes');
+            addPageElement('race-selector');
+            addPageElement('class-selector');
+
+            // Add three random elements
+            const availableElements = ['all-skills', 'portbox', 'magic-sheet', 'background-history', 'hit-points', 'ac', 'init', 'rest', 'advantage', 'spell-slots', 'actions', 'death-save', 'inspiration'];
+            for (let i = 0; i < 3; i++) {
+                const randomElement = availableElements[Math.floor(Math.random() * availableElements.length)];
+                addPageElement(randomElement);
+            }
+
+            // Apply random palette
+            const palettes = Array.from(document.getElementById('palette-selector').options).map(option => option.value);
+            const randomPalette = palettes[Math.floor(Math.random() * palettes.length)];
+            applyPalette(randomPalette);
+
+            console.log(`Applied ${layout} layout`);
+        }
+
+        function addPageElement(elementType) {
+            const pageContent = document.querySelector('.page-content');
+            let newElement;
+
+            switch (elementType) {
+                case 'attributes':
+                    newElement = document.getElementById('attributes').cloneNode(true);
+                    break;
+                case 'race-selector':
+                case 'class-selector':
+                    newElement = document.querySelector(`#${elementType}`).parentElement.cloneNode(true);
+                    break;
+                default:
+                    newElement= document.getElementById(elementType).cloneNode(true);
+            }
+
+            newElement.style.transform = 'none';
+            newElement.style.position = 'absolute';
+            newElement.style.left = `${Math.random() * (pageContent.clientWidth - 200)}px`;
+            newElement.style.top = `${Math.random() * (pageContent.clientHeight - 200)}px`;
+
+            pageContent.appendChild(newElement);
+        }
+
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const layout = getCurrentLayout();
+            const timestamp = new Date().toISOString();
+            const cookieName = `DnDCsc-${timestamp}`;
+            document.cookie = `${cookieName}=${JSON.stringify(layout)}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
+            downloadLayoutFile(cookieName, layout);
+        });
+
+        function getCurrentLayout() {
+            const pageElements = document.querySelectorAll('.page-element');
+            const layout = {
+                elements: [],
+                attributes: attributes,
+                race: document.getElementById('race-selector').value,
+                class: document.getElementById('class-selector').value,
+                palette: getCurrentPalette(),
+                background: document.body.style.backgroundImage,
+            };
+
+            pageElements.forEach(element => {
+                layout.elements.push({
+                    id: element.id,
+                    x: element.getAttribute('data-x') || 0,
+                    y: element.getAttribute('data-y') || 0,
+                    width: element.style.width,
+                    height: element.style.height,
+                    content: element.innerHTML,
+                });
+            });
+
+            return layout;
+        }
+
+        function downloadLayoutFile(filename, content) {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(content)));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        document.getElementById('folder-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.txt';
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    applyLoadedLayout(JSON.parse(content));
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+
+        function applyLoadedLayout(layout) {
+            // Clear current layout
+            clearPage();
+
+            // Apply loaded layout
+            layout.elements.forEach(element => {
+                const newElement = document.createElement('div');
+                newElement.id = element.id;
+                newElement.className = 'page-element';
+                newElement.style.transform = `translate(${element.x}px, ${element.y}px)`;
+                newElement.style.width = element.width;
+                newElement.style.height = element.height;
+                newElement.innerHTML = element.content;
+                document.querySelector('.page-content').appendChild(newElement);
+
+                if (element.id === 'portbox') {
+                    const img = newElement.querySelector('img');
+                    if (img) {
+                        img.style.width = '128px';
+                        img.style.height = '128px';
+                    }
+                }
+            });
+
+            // Update attributes, race, class, etc.
+            Object.assign(attributes, layout.attributes);
+            document.getElementById('race-selector').value = layout.race;
+            document.getElementById('class-selector').value = layout.class;
+            applyPalette(layout.palette);
+            document.body.style.backgroundImage = layout.background;
+
+            updateAttributeDisplay();
+        }
+
+        const palettes = [
+            { name: 'Default', primary: '#2c3e50', secondary: '#34495e', text: '#ecf0f1', accent: '#e74c3c' },
+            { name: 'Forest', primary: '#1b5e20', secondary: '#2e7d32', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Ocean', primary: '#01579b', secondary: '#0277bd', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Desert', primary: '#bf360c', secondary: '#d84315', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Night', primary: '#1a237e', secondary: '#283593', text: '#ffffff', accent: '#ff4081' },
+            { name: 'Sunset', primary: '#b71c1c', secondary: '#c62828', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Autumn', primary: '#4e342e', secondary: '#5d4037', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Spring', primary: '#558b2f', secondary: '#689f38', text: '#ffffff', accent: '#f06292' },
+            { name: 'Winter', primary: '#37474f', secondary: '#455a64', text: '#ffffff', accent: '#4fc3f7' },
+            { name: 'Summer', primary: '#f57f17', secondary: '#f9a825', text: '#ffffff', accent: '#64dd17' },
+            { name: 'Lavender', primary: '#5e35b1', secondary: '#7e57c2', text: '#ffffff', accent: '#ff4081' },
+            { name: 'Cherry Blossom', primary: '#f8bbd0', secondary: '#fce4ec', text: '#333333', accent: '#c2185b' },
+            { name: 'Emerald', primary: '#00695c', secondary: '#00897b', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Amethyst', primary: '#4a148c', secondary: '#6a1b9a', text: '#ffffff', accent: '#00e5ff' },
+            { name: 'Ruby', primary: '#b71c1c', secondary: '#c62828', text: '#ffffff', accent: '#ffeb3b' },
+            { name: 'Sapphire', primary: '#0d47a1', secondary: '#1565c0', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Topaz', primary: '#ff6f00', secondary: '#ff8f00', text: '#333333', accent: '#4a148c' },
+            { name: 'Peridot', primary: '#33691e', secondary: '#558b2f', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Aquamarine', primary: '#00838f', secondary: '#0097a7', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Garnet', primary: '#880e4f', secondary: '#ad1457', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Opal', primary: '#e0f7fa', secondary: '#b2ebf2', text: '#333333', accent: '#00838f' },
+            { name: 'Onyx', primary: '#212121', secondary: '#424242', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Pearl', primary: '#f5f5f5', secondary: '#eeeeee', text: '#333333', accent: '#9e9e9e' },
+            { name: 'Obsidian', primary: '#263238', secondary: '#37474f', text: '#ffffff', accent: '#ff5722' },
+            { name: 'Amber', primary: '#ff6f00', secondary: '#ff8f00', text: '#333333', accent: '#3e2723' },
+            { name: 'Jade', primary: '#004d40', secondary: '#00695c', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Coral', primary: '#ff7043', secondary: '#ff8a65', text: '#333333', accent: '#1a237e' },
+            { name: 'Turquoise', primary: '#00796b', secondary: '#00897b', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Malachite', primary: '#1b5e20', secondary: '#2e7d32', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Lapis Lazuli', primary: '#1a237e', secondary: '#283593', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Moonstone', primary: '#eceff1', secondary: '#cfd8dc', text: '#333333', accent: '#546e7a' },
+            { name: 'Sunstone', primary: '#ff5722', secondary: '#ff7043', text: '#333333', accent: '#ffd54f' },
+            { name: 'Citrine', primary: '#ffd600', secondary: '#ffea00', text: '#333333', accent: '#ff6f00' },
+            { name: 'Tanzanite', primary: '#3f51b5', secondary: '#5c6bc0', text: '#ffffff', accent: '#ff4081' },
+            { name: 'Alexandrite', primary: '#4a148c', secondary: '#6a1b9a', text: '#ffffff', accent: '#00c853' },
+            { name: 'Agate', primary: '#6d4c41', secondary: '#795548', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Bloodstone', primary: '#1b5e20', secondary: '#2e7d32', text: '#ffffff', accent: '#b71c1c' },
+            { name: 'Chrysoprase', primary: '#00c853', secondary: '#00e676', text: '#333333', accent: '#1a237e' },
+            { name: 'Zircon', primary: '#0277bd', secondary: '#0288d1', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Jasper', primary: '#bf360c', secondary: '#d84315', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Aventurine', primary: '#2e7d32', secondary: '#388e3c', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Carnelian', primary: '#d50000', secondary: '#e53935', text: '#ffffff', accent: '#ff6f00' },
+            { name: 'Chrysocolla', primary: '#006064', secondary: '#00838f', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Fluorite', primary: '#6a1b9a', secondary: '#7b1fa2', text: '#ffffff', accent: '#00e5ff' },
+            { name: 'Hematite', primary: '#424242', secondary: '#616161', text: '#ffffff', accent: '#ff1744' },
+            { name: 'Kunzite', primary: '#ec407a', secondary: '#f06292', text: '#333333', accent: '#7e57c2' },
+            { name: 'Labradorite', primary: '#455a64', secondary: '#546e7a', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Rhodonite', primary: '#c2185b', secondary: '#d81b60', text: '#ffffff', accent: '#76ff03' },
+            { name: 'Sodalite', primary: '#1565c0', secondary: '#1976d2', text: '#ffffff', accent: '#ffd54f' },
+            { name: 'Tiger Eye', primary: '#795548', secondary: '#8d6e63', text: '#ffffff', accent: '#ffd54f' }
+        ];
+
+        document.getElementById('pal-btn').addEventListener('click', () => {
+            document.getElementById('palette-chooser').style.display = 'block';
+        });
+
+        document.getElementById('palette-selector').addEventListener('change', (e) => {
+            const selectedPalette = palettes.find(p => p.name.toLowerCase() === e.target.value);
+            if (selectedPalette) {
+                updatePalettePreview(selectedPalette);
+            }
+        });
+
+        document.getElementById('apply-palette').addEventListener('click', () => {
+            const selectedPalette = palettes.find(p => p.name.toLowerCase() === document.getElementById('palette-selector').value);
+            if (selectedPalette) {
+                applyPalette(selectedPalette);
+                document.getElementById('palette-chooser').style.display = 'none';
+            }
+        });
+
+        document.getElementById('cancel-palette').addEventListener('click', () => {
+            document.getElementById('palette-chooser').style.display = 'none';
+        });
+
+        function updatePalettePreview(palette) {
+            document.getElementById('primary-color').style.backgroundColor = palette.primary;
+            document.getElementById('secondary-color').style.backgroundColor = palette.secondary;
+            document.getElementById('text-color').style.backgroundColor = palette.text;
+            document.getElementById('accent-color').style.backgroundColor = palette.accent;
+        }
+
+        function applyPalette(palette) {
+            document.documentElement.style.setProperty('--primary-color', palette.primary);
+            document.documentElement.style.setProperty('--secondary-color', palette.secondary);
+            document.documentElement.style.setProperty('--text-color', palette.text);
+            document.documentElement.style.setProperty('--accent-color', palette.accent);
+        }
+
+        function getCurrentPalette() {
+            return {
+                primary: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
+                secondary: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
+                text: getComputedStyle(document.documentElement).getPropertyValue('--text-color'),
+                accent: getComputedStyle(document.documentElement).getPropertyValue('--accent-color'),
+            };
+        }
+
+        document.getElementById('pic-btn').addEventListener('click', () => {
+            document.getElementById('image-chooser').style.display = 'block';
+        });
+
+        document.getElementById('portrait-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.querySelector('#portbox img');
+                    img.src = e.target.result;
+                    img.style.width = '128px';
+                    img.style.height = '128px';
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        });
+
+        document.getElementById('background-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('background-options').style.display = 'block';
+                    document.getElementById('apply-background').onclick = () => {
+                        const position = document.getElementById('background-position').value;
+                        const transparency = document.getElementById('transparency').value;
+                        if (position === 'behind-everything') {
+                            document.body.style.backgroundImage = `url(%24%7be.target.html)`;
+                            document.body.style.backgroundSize = 'cover';
+                            document.body.style.backgroundPosition = 'center';
+                            document.body.style.backgroundRepeat = 'no-repeat';
+                            document.body.style.opacity = transparency / 100;
+                        } else {
+                            document.querySelector('.page-content').style.backgroundImage = `url(%24%7be.target.html)`;
+                            document.querySelector('.page-content').style.backgroundSize = 'cover';
+                            document.querySelector('.page-content').style.backgroundPosition = 'center';
+                            document.querySelector('.page-content').style.backgroundRepeat = 'no-repeat';
+                            document.querySelectorAll('.page-element').forEach(el => {
+                                el.style.backgroundColor = `rgba(52, 73, 94, ${transparency / 100})`;
+                            });
+                        }
+                        document.getElementById('background-options').style.display = 'none';
+                    };
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        });
+
+        document.querySelector('#image-chooser .close-btn').addEventListener('click', () => {
+            document.getElementById('image-chooser').style.display = 'none';
+        });
+
+        document.querySelector('#background-options .close-btn').addEventListener('click', () => {
+            document.getElementById('background-options').style.display = 'none';
+        });
+
+        document.getElementById('help-btn').addEventListener('click', () => {
+            document.getElementById('help-box').style.display = 'block';
+        });
+
+        document.querySelector('#help-box .close-btn').addEventListener('click', () => {
+            document.getElementById('help-box').style.display = 'none';
+        });
+
+        document.getElementById('actions').addEventListener('click', (e) => {
+            if (e.target.classList.contains('add-action')) {
+                const newRow = document.createElement('div');
+                newRow.className = 'action-row';
+                newRow.innerHTML = `
+                    <select>
+                        <option value="">Select Weapon</option>
+                        <option value="club">Club</option>
+                        <option value="dagger">Dagger</option>
+                        <option value="greatclub">Greatclub</option>
+                        <option value="handaxe">Handaxe</option>
+                        <option value="javelin">Javelin</option>
+                        <option value="light-hammer">Light Hammer</option>
+                        <option value="mace">Mace</option>
+                        <option value="quarterstaff">Quarterstaff</option>
+                        <option value="sickle">Sickle</option>
+                        <option value="spear">Spear</option>
+                        <option value="light-crossbow">Light Crossbow</option>
+                        <option value="dart">Dart</option>
+                        <option value="shortbow">Shortbow</option>
+                        <option value="sling">Sling</option>
+                        <option value="battleaxe">Battleaxe</option>
+                        <option value="flail">Flail</option>
+                        <option value="glaive">Glaive</option>
+                        <option value="greataxe">Greataxe</option>
+                        <option value="greatsword">Greatsword</option>
+                        <option value="halberd">Halberd</option>
+                        <option value="lance">Lance</option>
+                        <option value="longsword">Longsword</option>
+                        <option value="maul">Maul</option>
+                        <option value="morningstar">Morningstar</option>
+                        <option value="pike">Pike</option>
+                        <option value="rapier">Rapier</option>
+                        <option value="scimitar">Scimitar</option>
+                        <option value="shortsword">Shortsword</option>
+                        <option value="trident">Trident</option>
+                        <option value="war-pick">War Pick</option>
+                        <option value="warhammer">Warhammer</option>
+                        <option value="whip">Whip</option>
+                        <option value="blowgun">Blowgun</option>
+                        <option value="hand-crossbow">Hand Crossbow</option>
+                        <option value="heavy-crossbow">Heavy Crossbow</option>
+                        <option value="longbow">Longbow</option>
+                        <option value="net">Net</option>
+                    </select>
+                    <button class="dex-mod">${getASMValue(attributes.dexterity)}</button>
+                    <input type="text" placeholder="Notes">
+                    <span class="remove-action">➖</span>
+                `;
+                e.target.parentElement.parentElement.insertBefore(newRow, e.target.parentElement.nextSibling);
+            } else if (e.target.classList.contains('remove-action')) {
+                e.target.parentElement.remove();
+            }
+        });
+
+        document.querySelectorAll('.remove-element').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (isEditMode || isGridMode) {
+                    e.target.closest('.page-element').remove();
+                }
+            });
+        });
+
+        document.querySelectorAll('.lock-element').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (isGridMode) {
+                    const pageElement = e.target.closest('.page-element');
+                    const resizeHandle = pageElement.querySelector('.resize-handle');
+                    if (e.target.textContent === '🔒') {
+                        e.target.textContent = '🔐';
+                        resizeHandle.style.display = 'none';
+                    } else {
+                        e.target.textContent = '🔒';
+                        resizeHandle.style.display = 'block';
+                    }
+                }
+            });
+        });
+
+        document.getElementById('element-picker-btn').addEventListener('click', () => {
+            document.getElementById('element-chooser').style.display = 'block';
+        });
+
+        document.getElementById('add-element-btn').addEventListener('click', () => {
+            const selectedElement = document.getElementById('element-selector').value;
+            const useCleanSheet = document.getElementById('use-clean-sheet').checked;
+
+            if (useCleanSheet) {
+                clearPage();
+            }
+
+            addPageElement(selectedElement);
+            document.getElementById('element-chooser').style.display = 'none';
+        });
+
+        document.getElementById('close-element-chooser').addEventListener('click', () => {
+            document.getElementById('element-chooser').style.display = 'none';
+        });
+
+        document.getElementById('meta-reduce-borders').addEventListener('click', function() {
+            document.querySelectorAll('.page-element').forEach(element => {
+                element.style.padding = '5px';
+                element.style.margin = '5px';
+            });
+            this.remove();
+        });
+
+        document.getElementById('meta-rainbow').addEventListener('click', function() {
+            document.body.classList.add('rainbow-background');
+            document.body.style.opacity = '0.8';
+            this.remove();
+        });
+
+        document.getElementById('meta-cats').addEventListener('click', function() {
+            const catEmojis = '😸🙀🐾😻🐅🐆🐈😺';
+            const catBackground = document.createElement('div');
+            catBackground.style.position = 'fixed';
+            catBackground.style.top = '0';
+            catBackground.style.left = '0';
+            catBackground.style.width = '100%';
+            catBackground.style.height = '100%';
+            catBackground.style.zIndex = '-1';
+            catBackground.style.opacity = '0.1';
+            catBackground.style.fontSize = '48px';
+            catBackground.style.overflow = 'hidden';
+            catBackground.style.userSelect = 'none';
+            
+            for (let i = 0; i < 100; i++) {
+                const span = document.createElement('span');
+                span.textContent = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+                span.style.position = 'absolute';
+                span.style.left = `${Math.random() * 100}%`;
+                span.style.top = `${Math.random() * 100}%`;
+                catBackground.appendChild(span);
+            }
+            
+            document.body.insertBefore(catBackground, document.body.firstChild);
+            this.remove();
+        });
+
+        document.getElementById('meta-skulls').addEventListener('click', function() {
+            const skullEmojis = '☠️💀';
+            const skullBackground = document.createElement('div');
+            skullBackground.style.position = 'fixed';
+            skullBackground.style.top = '0';
+            skullBackground.style.left = '0';
+            skullBackground.style.width = '100%';
+            skullBackground.style.height = '100%';
+            skullBackground.style.zIndex = '-1';
+            skullBackground.style.opacity = '0.1';
+            skullBackground.style.fontSize = '48px';
+            skullBackground.style.overflow = 'hidden';
+            skullBackground.style.userSelect = 'none';
+            
+            for (let i = 0; i < 100; i++) {
+                const span = document.createElement('span');
+                span.textContent = skullEmojis[Math.floor(Math.random() * skullEmojis.length)];
+                span.style.position = 'absolute';
+                span.style.left = `${Math.random() * 100}%`;
+                span.style.top = `${Math.random() * 100}%`;
+                skullBackground.appendChild(span);
+            }
+            
+            document.body.insertBefore(skullBackground, document.body.firstChild);
+            this.remove();
+        });
+
+        const shapeBtn = document.getElementById('shape-btn');
+        const removeShapeBtn = document.getElementById('remove-shape-btn');
+        const shapes = ['circle', 'square', 'hexagon', 'octagon', 'decagon'];
+        let currentShapeIndex = 0;
+
+        shapeBtn.addEventListener('click', () => {
+            currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+            const newShape = shapes[currentShapeIndex];
+            shapeBtn.textContent = `Shape: ${newShape}`;
+            document.querySelectorAll('.attribute-button').forEach(button => {
+                button.style.borderRadius = getShapeBorderRadius(newShape);
+            });
+        });
+
+        removeShapeBtn.addEventListener('click', () => {
+            document.getElementById('meta-ape-shape').remove();
+        });
+
+        function getShapeBorderRadius(shape) {
+            switch (shape) {
+                case 'circle': return '50%';
+                case 'square': return '0';
+                case 'hexagon': return '25%';
+                case 'octagon': return '30% 70% 70% 30% / 30% 30% 70% 70%';
+                case 'decagon': return '50% 50% 50% 50% / 50% 50% 50% 50%';
+                default: return '50%';
+            }
+        }
+
+        function adjustLayoutForDevice() {
+            const topBar = document.querySelector('.top-bar');
+            const pageContent = document.querySelector('.page-content');
+
+            switch (layoutType) {
+                case 'PC':
+                    topBar.style.flexDirection = 'row';
+                    topBar.style.top = 'auto';
+                    topBar.style.bottom = '0';
+                    topBar.style.left = '0';
+                    topBar.style.right = '0';
+                    topBar.style.width = '100%';
+                    pageContent.style.marginBottom = '60px';
+                    pageContent.style.marginTop = '10px';
+                    pageContent.style.marginLeft = '0';
+                    break;
+                case 'Side':
+                    topBar.style.flexDirection = 'column';
+                    topBar.style.left = '0';
+                    topBar.style.top = '0';
+                    topBar.style.bottom = '0';
+                    topBar.style.width = '60px';
+                    pageContent.style.marginLeft = '70px';
+                    pageContent.style.marginTop = '10px';
+                    pageContent.style.marginBottom = '0';
+                    break;
+                case 'Apple':
+                    topBar.style.flexDirection = 'row';
+                    topBar.style.top = 'auto';
+                    topBar.style.bottom = '0';
+                    topBar.style.left = '25%';
+                    topBar.style.right = '25%';
+                    topBar.style.width = '50%';
+                    pageContent.style.marginBottom = '60px';
+                    pageContent.style.marginTop = '10px';
+                    pageContent.style.marginLeft = '0';
+                    break;
+                case 'Phone':
+                default:
+                    topBar.style.flexDirection = 'row';
+                    topBar.style.top = '0';
+                    topBar.style.bottom = 'auto';
+                    topBar.style.left = '0';
+                    topBar.style.right = '0';
+                    topBar.style.width = '100%';
+                    pageContent.style.marginTop = '60px';
+                    pageContent.style.marginLeft = '0';
+                    pageContent.style.marginBottom = '0';
+                    break;
+            }
+
+            showNotification(`${layoutType} Layout Applied`);
+        }
+
+        // Call this function when the page loads
+        window.addEventListener('load', adjustLayoutForDevice);
+
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            document.getElementById('settings-conf').style.display = 'block';
+        });
+
+        document.querySelector('#settings-conf .close-btn').addEventListener('click', () => {
+            document.getElementById('settings-conf').style.display = 'none';
+        });
+
+        document.getElementById('mt-button').addEventListener('click', () => {
+            const layouts = ['PC', 'Side', 'Apple', 'Phone'];
+            const currentIndex = layouts.indexOf(layoutType);
+            layoutType = layouts[(currentIndex + 1) % layouts.length];
+            document.getElementById('mt-button').textContent = `Layout Type: ${layoutType}`;
+            adjustLayoutForDevice();
+        });
+
+        document.getElementById('stats-assign-btn').addEventListener('click', () => {
+            boolHasStats = !boolHasStats;
+            document.getElementById('stats-assign-btn').textContent = `Stats: ${boolHasStats ? 'Assigned' : 'Not Assigned'}`;
+            updateAttributeDisplay();
+        });
+
+        // Initialize the character sheet
+        updateAttributeDisplay();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'8bc874cf09446abe',t:'MTcyNTIyNzIyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='../../cdn-cgi/challenge-platform/h/g/scripts/jsd/e7cf9275f425/maind41d.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"8bc874cf09446abe","version":"2024.8.0","r":1,"serverTiming":{"name":{"cfL4":true}},"token":"5562e2e56e7244b2af1869a8c731adb3","b":1}' crossorigin="anonymous"></script>
+</body>
+
+<!-- Mirrored from caisual.com/games/nf6odou0vu3wfd0o/index.html?unique_id=nf6odou0vu3wfd0o&roomId=&id=&userId=Anon-7oQeX by HTTrack Website Copier/3.x [XR&CO'2014], Sun, 01 Sep 2024 21:47:09 GMT -->
+</html>
