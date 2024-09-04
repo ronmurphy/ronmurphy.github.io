@@ -1,0 +1,1701 @@
+<html lang="en">
+
+<!-- Mirrored from caisual.com/games/6zh1a6dc6xcq1a69/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 04 Sep 2024 04:55:27 GMT -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e Sheet Designer</title>
+    <meta name="description" content="Create and customize your own D&D 5e character sheet layout with draggable elements.">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #canvas {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 50px);
+            overflow: hidden;
+            margin-top: 50px;
+        }
+        .page-element {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: move;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #007bff;
+            bottom: 0;
+            right: 0;
+            cursor: se-resize;
+        }
+        #start-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+        }
+        #start-menu button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #333;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        #top-bar button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .grid-line {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .grid-dot {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+        }
+        #dice-results {
+            position: fixed;
+            bottom: 60px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+        }
+        .attribute-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 2px solid #333;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .attribute-modifier {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .attribute-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+        }
+        #os-dice {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        #element-chooser-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
+        }
+        .grouped-attributes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .skill-button {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+        .port-box {
+            width: 128px;
+            height: 128px;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+        .magic-sheet {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .magic-sheet textarea {
+            width: 100%;
+            min-height: 100px;
+        }
+        .hp-element, .ac-element, .init-element {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-element {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-element input[type="checkbox"] {
+            width: 40px;
+            height: 20px;
+        }
+        .spell-slots {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+        }
+        .spell-slots input {
+            width: 100%;
+            text-align: center;
+        }
+        .actions-element, .worn-armor-element {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .actions-row, .worn-armor-row {
+            display: flex;
+            gap: 10px;
+        }
+        .currency-element {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .currency-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .char-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #settings-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .remove-element {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .shape-cycle {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #help-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .attribute-cycle {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .messages-element {
+            position: absolute;
+            width: 30%;
+            height: 80%;
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .messages-element iframe {
+            width: 90%;
+            height: 90%;
+            border: none;
+            margin: 10px auto;
+        }
+        .messages-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .spell-grid-plus {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .spell-grid-plus textarea {
+            width: 100%;
+            min-height: 100px;
+        }
+        .char-level {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .level-conf {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .file-chooser {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        #element-chooser-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .element-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-menu">
+        <h1>D&D 5e Character Sheet Designer</h1>
+        <p>Drag elements to position them. Use the bottom-right corner to resize.</p>
+        <button id="ready-btn">Ready</button>
+    </div>
+    <div id="top-bar">
+        <button id="NewPageButton" title="New Page">🎲</button>
+        <button id="SaveButton" title="Save">💾</button>
+        <button id="FolderButton" title="Folder">📂</button>
+        <button id="LayoutButton" title="Layout">🖌️</button>
+        <button id="LinkButton" title="Link">🔗</button>
+        <button id="PalButton" title="Palette">🎨</button>
+        <button id="PicButton" title="Picture">🖼️</button>
+        <button id="SettingsButton" title="Settings">⚙️</button>
+        <button id="HelpButton" title="Help">❓</button>
+        <button id="ImportButton" title="Import D&D Beyond Character">📥</button>
+        <button id="DiamondButton" title="Diamond">🔶</button>
+    </div>
+    <div id="canvas"></div>
+    <div id="grid"></div>
+    <div id="dice-results"></div>
+    <button id="os-dice">🎲</button>
+    <button id="element-chooser-button">➕</button>
+
+    <!-- Modals -->
+    <div id="pic-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <button id="portrait-btn">Portrait</button>
+            <button id="background-btn">Background</button>
+        </div>
+    </div>
+
+    <div id="background-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <select id="background-type">
+                <option value="behind-elements">Behind PageElements</option>
+                <option value="behind-everything">Behind Everything</option>
+            </select>
+            <input type="number" id="transparency" value="90" min="0" max="100">
+            <button id="save-background">Save</button>
+        </div>
+    </div>
+
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Choose save name...</h2>
+            <input type="text" id="save-name">
+            <button id="save-btn">Save</button>
+        </div>
+    </div>
+
+    <div id="palette-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <select id="palette-select"></select>
+            <div id="color-boxes"></div>
+            <button id="apply-palette">Apply</button>
+            <button id="cancel-palette">Cancel</button>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Help</h2>
+            <div id="help-content"></div>
+            <button id="help-next">➡️</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <button id="mt-button"></button>
+            <button id="stats-assign-btn"></button>
+            <button id="grid-type-btn"></button>
+            <div>
+                <label for="custom-trans">Element Transparency:</label>
+                <input type="number" id="custom-trans" min="0" max="100" value="95">
+            </div>
+        </div>
+    </div>
+
+    <div id="element-chooser-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="element-checkboxes"></div>
+            <button id="add-element">Add to Sheet</button>
+            <button id="close-element-chooser">Close</button>
+        </div>
+    </div>
+
+    <div id="dice-roller-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Dice Roller</h2>
+            <div id="dice-roller-content"></div>
+        </div>
+    </div>
+
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Import D&D Beyond Character</h2>
+            <input type="text" id="ddb-url" placeholder="Enter D&D Beyond character URL">
+            <button id="import-character">Import</button>
+        </div>
+    </div>
+
+    <div id="level-conf-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Set Character Level</h2>
+            <div class="level-conf">
+                <input type="number" id="char-level-input" min="1" max="20" value="1">
+                <button id="level-up">+</button>
+                <button id="level-down">-</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const startMenu = document.getElementById('start-menu');
+        const readyBtn = document.getElementById('ready-btn');
+        const grid = document.getElementById('grid');
+        const diceResults = document.getElementById('dice-results');
+        const osDice = document.getElementById('os-dice');
+        const elementChooserButton = document.getElementById('element-chooser-button');
+
+        // Global variables
+        let LayoutType = 'Phone';
+        let boolGrid = true;
+        let boolHasStats = false;
+        const FilePrefix = 'DnDCSC-';
+        let EditMode = false;
+        let GridMode = false;
+        let CustomTrans = 95;
+
+        const attributes = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+        const skills = [
+            { name: 'Acrobatics', attribute: 'DEX' },
+            { name: 'Animal Handling', attribute: 'WIS' },
+            { name: 'Arcana', attribute: 'INT' },
+            { name: 'Athletics', attribute: 'STR' },
+            { name: 'Deception', attribute: 'CHA' },
+            { name: 'History', attribute: 'INT' },
+            { name: 'Insight', attribute: 'WIS' },
+            { name: 'Intimidation', attribute: 'CHA' },
+            { name: 'Investigation', attribute: 'INT' },
+            { name: 'Medicine', attribute: 'WIS' },
+            { name: 'Nature', attribute: 'INT' },
+            { name: 'Perception', attribute: 'WIS' },
+            { name: 'Performance', attribute: 'CHA' },
+            { name: 'Persuasion', attribute: 'CHA' },
+            { name: 'Religion', attribute: 'INT' },
+            { name: 'Sleight of Hand', attribute: 'DEX' },
+            { name: 'Stealth', attribute: 'DEX' },
+            { name: 'Survival', attribute: 'WIS' }
+        ];
+
+        const races = ['Dragonborn', 'Dwarf', 'Elf', 'Gnome', 'Half-Elf', 'Half-Orc', 'Halfling', 'Human', 'Tiefling'];
+        const classes = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard'];
+        const weapons = [
+            'Battleaxe', 'Blowgun', 'Club', 'Crossbow, hand', 'Crossbow, heavy', 'Crossbow, light',
+            'Dagger', 'Dart', 'Flail', 'Glaive', 'Greataxe', 'Greatclub', 'Greatsword', 'Halberd',
+            'Handaxe', 'Javelin', 'Lance', 'Light hammer', 'Longbow', 'Longsword', 'Mace', 'Maul',
+            'Morningstar', 'Net', 'Pike', 'Quarterstaff', 'Rapier', 'Scimitar', 'Shortbow', 'Shortsword',
+            'Sickle', 'Sling', 'Spear', 'Trident', 'War pick', 'Warhammer', 'Whip'
+        ];
+        const armor = [
+            'Padded', 'Leather', 'Studded leather', 'Hide', 'Chain shirt', 'Scale mail', 'Breastplate', 'Half plate',
+            'Ring mail', 'Chain mail', 'Splint', 'Plate'
+        ];
+
+        function createPageElement(type, content) {
+            const div = document.createElement('div');
+            div.className = 'page-element';
+            div.dataset.type = type;
+            div.innerHTML = content;
+            div.style.left = `${50 + Math.random() * 100}px`;
+            div.style.top = `${50 + Math.random() * 100}px`;
+            div.style.backgroundColor = `rgba(255, 255, 255, ${CustomTrans / 100})`;
+            canvas.appendChild(div);
+
+            if (EditMode || GridMode) {
+                const removeButton = document.createElement('button');
+                removeButton.innerHTML = '❌';
+                removeButton.className = 'remove-element';
+                removeButton.onclick = () => div.remove();
+                div.appendChild(removeButton);
+            }
+
+            if (EditMode && GridMode && type.startsWith('attribute')) {
+                const shapeButton = document.createElement('button');
+                shapeButton.innerHTML = '🔲';
+                shapeButton.className = 'shape-cycle';
+                shapeButton.onclick = () => cycleShape(div);
+                div.appendChild(shapeButton);
+
+                const attributeCycleButton = document.createElement('button');
+                attributeCycleButton.innerHTML = '➡️';
+                attributeCycleButton.className = 'attribute-cycle';
+                attributeCycleButton.onclick = () => cycleAttribute(div);
+                div.appendChild(attributeCycleButton);
+            }
+
+            if (type === 'port-box' || type === 'graphic-element') {
+                const fileChooser = document.createElement('button');
+                fileChooser.innerHTML = '📂';
+                fileChooser.className = 'file-chooser';
+                fileChooser.onclick = () => chooseFile(div);
+                div.appendChild(fileChooser);
+            }
+
+            interact(div)
+                .draggable({
+                    inertia: true,
+                    modifiers: [
+                        interact.modifiers.restrictRect({
+                            restriction: 'parent',
+                            endOnly: true
+                        })
+                    ],
+                    autoScroll: true,
+                    listeners: {
+                        move: dragMoveListener,
+                    }
+                })
+                .resizable({
+                    edges: { bottom: true, right: true },
+                    listeners: {
+                        move: resizeMoveListener
+                    },
+                })
+        }
+
+        function dragMoveListener(event) {
+            const target = event.target;
+            const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+            const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+            target.style.transform = `translate(${x}px, ${y}px)`;
+            target.setAttribute('data-x', x);
+            target.setAttribute('data-y', y);
+
+            if (GridMode) {
+                const gridSize = 16;
+                const snappedX = Math.round(x / gridSize) * gridSize;
+                const snappedY = Math.round(y / gridSize) * gridSize;
+                target.style.transform = `translate(${snappedX}px, ${snappedY}px)`;
+                target.setAttribute('data-x', snappedX);
+                target.setAttribute('data-y', snappedY);
+            }
+        }
+
+        function resizeMoveListener(event) {
+            const target = event.target;
+            const x = parseFloat(target.getAttribute('data-x') || 0);
+            const y = parseFloat(target.getAttribute('data-y') || 0);
+
+            Object.assign(target.style, {
+                width: `${event.rect.width}px`,
+                height: `${event.rect.height}px`,
+                transform: `translate(${x}px, ${y}px)`
+            });
+        }
+
+        function createAttributeElement(attribute) {
+            const content = `
+                <div class="attribute-label">${attribute}</div>
+                <button class="attribute-button">10</button>
+                <div class="attribute-modifier">+0</div>
+                <div class="attribute-shorthand">${attribute.substring(0, 3)}</div>
+            `;
+            createPageElement('attribute', content);
+        }
+
+        function createGroupedAttributesElement() {
+            let content = '<div class="grouped-attributes">';
+            attributes.forEach(attr => {
+                content += `
+                    <div class="attribute-element">
+                        <div class="attribute-label">${attr}</div>
+                        <button class="attribute-button">10</button>
+                        <div class="attribute-modifier">+0</div>
+                        <div class="attribute-shorthand">${attr.substring(0, 3)}</div>
+                    </div>
+                `;
+            });
+            content += '</div>';
+            createPageElement('grouped-attributes', content);
+        }
+
+        function createRaceSelectorElement() {
+            let content = '<select class="race-selector">';
+            races.forEach(race => {
+                content += `<option value="${race}">${race}</option>`;
+            });
+            content += '</select>';
+            createPageElement('race-selector', content);
+        }
+
+        function createClassSelectorElement() {
+            let content = '<select class="class-selector">';
+            classes.forEach(cls => {
+                content += `<option value="${cls}">${cls}</option>`;
+            });
+            content += '</select>';
+            createPageElement('class-selector', content);
+        }
+
+        function createSkillsElement() {
+            let content = '<div class="skills-element">';
+            skills.forEach(skill => {
+                content += `<button class="skill-button" data-attribute="${skill.attribute}">${skill.name} - ${skill.attribute} [+0]</button>`;
+            });
+            content += '</div>';
+            createPageElement('skills', content);
+        }
+
+        function createPortBoxElement() {
+            const content = '<div class="port-box">Portrait</div>';
+            createPageElement('port-box', content);
+        }
+
+        function createMagicSheetElement() {
+            let content = '<div class="magic-sheet">';
+            content += '<textarea placeholder="Spells"></textarea>';
+            for (let i = 1; i <= 3; i++) {
+                content += `<textarea placeholder="${i} level spells"></textarea>`;
+            }
+            content += '</div>';
+            createPageElement('magic-sheet', content);
+        }
+
+        function createBackgroundHistoryElement() {
+            const content = '<textarea rows="2" placeholder="Background History"></textarea>';
+            createPageElement('background-history', content);
+        }
+
+        function createMagicSheetPlusElement() {
+            let content = '<div class="magic-sheet">';
+            content += '<textarea placeholder="Cantrips"></textarea>';
+            for (let i = 1; i <= 3; i++) {
+                content += '<div class="spell-row">';
+                for (let j = 1; j <= 3; j++) {
+                    content += `<textarea placeholder="${i} level spells"></textarea>`;
+                }
+                content += '</div>';
+            }
+            content += '</div>';
+            createPageElement('magic-sheet-plus', content);
+        }
+
+        function createHPElement() {
+            const content = `
+                <div class="hp-element">
+                    <label>HP:</label>
+                    <input type="number" min="0" value="0">
+                    <button class="hp-up">▲</button>
+                    <button class="hp-down">▼</button>
+                </div>
+            `;
+            createPageElement('hp', content);
+        }
+
+        function createACElement() {
+            const content = `
+                <div class="ac-element">
+                    <label>AC:</label>
+                    <span class="ac-value">10</span>
+                </div>
+            `;
+            createPageElement('ac', content);
+        }
+
+        function createInitElement() {
+            const content = `
+                <div class="init-element">
+                    <label>Initiative:</label>
+                    <span class="init-value">+0</span>
+                </div>
+            `;
+            createPageElement('init', content);
+        }
+
+        function createRestElement() {
+            const content = `
+                <div class="toggle-element">
+                    <label>Rest:</label>
+                    <input type="checkbox">
+                </div>
+            `;
+            createPageElement('rest', content);
+        }
+
+        function createAdvantageElement() {
+            const content = `
+                <div class="toggle-element">
+                    <label>Advantage:</label>
+                    <input type="checkbox">
+                </div>
+            `;
+            createPageElement('advantage', content);
+        }
+
+        function createSpellSlotsElement() {
+            let content = '<div class="spell-slots">';
+            for (let i = 1; i <= 10; i++) {
+                content += `<input type="number" min="0" value="0">`;
+            }
+            content += '</div>';
+            createPageElement('spell-slots', content);
+        }
+
+        function createActionsElement() {
+            const content = `
+                <div class="actions-element">
+                    <div class="actions-row">
+                        <select class="weapon-select">
+                            ${weapons.map(weapon => `<option value="${weapon}">${weapon}</option>`).join('')}
+                        </select>
+                        <button class="dex-mod">+0</button>
+                        <button class="damage-roll">Roll</button>
+                    </div>
+                    <button class="add-action">➕</button>
+                </div>
+            `;
+            createPageElement('actions', content);
+        }
+
+        function createWornArmorElement() {
+            const content = `
+                <div class="worn-armor-element">
+                    <div class="worn-armor-row">
+                        <select class="armor-select">
+                            ${armor.map(a => `<option value="${a}">${a}</option>`).join('')}
+                        </select>
+                        <span class="armor-class">10</span>
+                        <label><input type="checkbox"> Add to AC</label>
+                    </div>
+                    <button class="add-armor">➕</button>
+                </div>
+            `;
+            createPageElement('worn-armor', content);
+        }
+
+        function createChooseSpellsSimpleElement() {
+            const content = `
+                <div class="choose-spells-simple">
+                    <select class="spell-select"></select>
+                    <button class="add-spell">Add to list</button>
+                </div>
+            `;
+            createPageElement('choose-spells-simple', content);
+        }
+
+        function createCurrencyElement() {
+            const currencies = ['Copper', 'Silver', 'Gold', 'Electrum', 'Platinum', 'Gems'];
+            let content = '<div class="currency-element">';
+            currencies.forEach(currency => {
+                content += `
+                    <div class="currency-row">
+                        <label>${currency}:</label>
+                        <input type="number" min="0" value="0">
+                        <button class="currency-up">▲</button>
+                        <button class="currency-down">▼</button>
+                    </div>
+                `;
+            });
+            content += '</div>';
+            createPageElement('currency', content);
+        }
+
+        function createCharNameElement() {
+            const content = `
+                <div class="char-name">
+                    <input type="text" placeholder="Character Name">
+                    <button class="char-name-submit">⏎</button>
+                </div>
+            `;
+            createPageElement('char-name', content);
+        }
+
+        function createCharacterNameElement(name) {
+            const content = `<h2>${name}</h2>`;
+            createPageElement('character-name', content);
+        }
+
+        function createMessagesElement() {
+            const content = `
+                <div class="messages-element">
+                    <button class="close">❌</button>
+                    <div class="messages-buttons">
+                        <button class="discord-btn">Discord</button>
+                        <button class="messenger-btn">Messenger</button>
+                    </div>
+                    <iframe></iframe>
+                </div>
+            `;
+            createPageElement('messages', content);
+        }
+
+        function createSpellGridPlusElement() {
+            let content = '<div class="spell-grid-plus">';
+            content += '<textarea placeholder="Cantrips"></textarea>';
+            for (let i = 1; i <= 9; i++) {
+                content += `<textarea placeholder="${i} level spells"></textarea>`;
+            }
+            content += '</div>';
+            createPageElement('spell-grid-plus', content);
+        }
+
+        function createCharLevelElement() {
+            const content = `
+                <div class="char-level">
+                    <label>Level:</label>
+                    <span class="level-value">1</span>
+                    <button class="level-settings">⚙️</button>
+                </div>
+            `;
+            createPageElement('char-level', content);
+        }
+
+        function updateElementChooser() {
+            const elementCheckboxes = document.getElementById('element-checkboxes');
+            const elements = [
+                'Attribute', 'Grouped Attributes', 'Race Selector', 'Class Selector', 'Skills',
+                'Port Box', 'Magic Sheet', 'Background History', 'Magic Sheet+', 'HP',
+                'AC', 'Initiative', 'Rest', 'Advantage', 'Spell Slots', 'Actions',
+                'Worn Armor', 'Choose Spells Simple', 'Currency', 'Character Name',
+                'Messages', 'Spell Grid+', 'Character Level'
+            ];
+            elementCheckboxes.innerHTML = elements.map(el => `
+                <div class="element-checkbox">
+                    <input type="checkbox" id="${el.toLowerCase().replace(/ /g, '-')}" value="${el}">
+                    <label for="${el.toLowerCase().replace(/ /g, '-')}">${el}</label>
+                </div>
+            `).join('');
+        }
+
+        function createGrid() {
+            grid.innerHTML = '';
+            const gridSize = 16;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            if (boolGrid) {
+                for (let x = 0; x < width; x += gridSize) {
+                    const verticalLine = document.createElement('div');
+                    verticalLine.className = 'grid-line';
+                    verticalLine.style.left = `${x}px`;
+                    verticalLine.style.top = '0';
+                    verticalLine.style.width = '1px';
+                    verticalLine.style.height = '100%';
+                    grid.appendChild(verticalLine);
+                }
+
+                for (let y = 0; y < height; y += gridSize) {
+                    const horizontalLine = document.createElement('div');
+                    horizontalLine.className = 'grid-line';
+                    horizontalLine.style.left = '0';
+                    horizontalLine.style.top = `${y}px`;
+                    horizontalLine.style.width = '100%';
+                    horizontalLine.style.height = '1px';
+                    grid.appendChild(horizontalLine);
+                }
+            } else {
+                for (let x = 0; x < width; x += gridSize) {
+                    for (let y = 0; y < height; y += gridSize) {
+                        const dot = document.createElement('div');
+                        dot.className = 'grid-dot';
+                        dot.style.left = `${x}px`;
+                        dot.style.top = `${y}px`;
+                        grid.appendChild(dot);
+                    }
+                }
+            }
+        }
+
+        function updateLayout() {
+            const topBar = document.getElementById('top-bar');
+            switch (LayoutType) {
+                case 'PC':
+                    topBar.style.top = 'auto';
+                    topBar.style.bottom = '0';
+                    topBar.style.left = '0';
+                    topBar.style.width = '100%';
+                    topBar.style.height = '50px';
+                    canvas.style.marginTop = '0';
+                    canvas.style.marginBottom = '50px';
+                    osDice.style.bottom = '60px';
+                    osDice.style.left = '20px';
+                    elementChooserButton.style.bottom = '60px';
+                    elementChooserButton.style.left = '20px';
+                    break;
+                case 'Side':
+                    topBar.style.top = '0';
+                    topBar.style.left = '0';
+                    topBar.style.width = '50px';
+                    topBar.style.height = '100%';
+                    topBar.style.flexDirection = 'column';
+                    canvas.style.marginLeft = '50px';
+                    canvas.style.marginTop = '0';
+                    osDice.style.top = '60px';
+                    osDice.style.right = '10px';
+                    elementChooserButton.style.top = '60px';
+                    elementChooserButton.style.right = '10px';
+                    break;
+                case 'Apple':
+                    topBar.style.top = 'auto';
+                    topBar.style.bottom = '0';
+                    topBar.style.left= '25%';
+                    topBar.style.width = '50%';
+                    topBar.style.height = '50px';
+                    canvas.style.marginTop = '0';
+                    canvas.style.marginBottom = '50px';
+                    osDice.style.bottom = '60px';
+                    osDice.style.left = '20px';
+                    elementChooserButton.style.bottom = '60px';
+                    elementChooserButton.style.left = '20px';
+                    break;
+                case 'Phone':
+                    topBar.style.top = '0';
+                    topBar.style.left = '0';
+                    topBar.style.width = '100%';
+                    topBar.style.height = '50px';
+                    topBar.style.flexDirection = 'row';
+                    canvas.style.marginTop = '50px';
+                    canvas.style.marginLeft = '0';
+                    osDice.style.bottom = '20px';
+                    osDice.style.left ='20px';
+                    elementChooserButton.style.bottom = '20px';
+                    elementChooserButton.style.left = '20px';
+                    break;
+            }
+        }
+
+        function toggleEditMode() {
+            EditMode = !EditMode;
+            updateModeVisibility();
+        }
+
+        function toggleGridMode() {
+            GridMode = !GridMode;
+            updateModeVisibility();
+        }
+
+        function updateModeVisibility() {
+            grid.style.display = GridMode ? 'block' : 'none';
+            osDice.style.display = (!EditMode && !GridMode) ? 'flex' : 'none';
+            elementChooserButton.style.display = (EditMode || GridMode) ? 'block' : 'none';
+
+            document.querySelectorAll('.page-element').forEach(el => {
+                if (EditMode || GridMode) {
+                    if (!el.querySelector('.remove-element')) {
+                        const removeButton = document.createElement('button');
+                        removeButton.innerHTML = '❌';
+                        removeButton.className = 'remove-element';
+                        removeButton.onclick = () => el.remove();
+                        el.appendChild(removeButton);
+                    }
+                } else {
+                    const removeButton = el.querySelector('.remove-element');
+                    if (removeButton) {
+                        removeButton.remove();
+                    }
+                }
+
+                if (EditMode && GridMode && el.dataset.type.startsWith('attribute')) {
+                    if (!el.querySelector('.shape-cycle')) {
+                        const shapeButton = document.createElement('button');
+                        shapeButton.innerHTML = '🔲';
+                        shapeButton.className = 'shape-cycle';
+                        shapeButton.onclick = () => cycleShape(el);
+                        el.appendChild(shapeButton);
+                    }
+                    if (!el.querySelector('.attribute-cycle')) {
+                        const attributeCycleButton = document.createElement('button');
+                        attributeCycleButton.innerHTML = '➡️';
+                        attributeCycleButton.className = 'attribute-cycle';
+                        attributeCycleButton.onclick = () => cycleAttribute(el);
+                        el.appendChild(attributeCycleButton);
+                    }
+                } else {
+                    const shapeButton = el.querySelector('.shape-cycle');
+                    if (shapeButton) {
+                        shapeButton.remove();
+                    }
+                    const attributeCycleButton = el.querySelector('.attribute-cycle');
+                    if (attributeCycleButton) {
+                        attributeCycleButton.remove();
+                    }
+                }
+            });
+        }
+
+        function cycleShape(element) {
+            const shapes = ['circle', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'nonagon', 'decagon', 'hendecagon'];
+            const currentShape = element.dataset.shape || 'circle';
+            const nextShapeIndex = (shapes.indexOf(currentShape) + 1) % shapes.length;
+            const nextShape = shapes[nextShapeIndex];
+            element.dataset.shape = nextShape;
+            updateElementShape(element, nextShape);
+        }
+
+        function updateElementShape(element, shape) {
+            const button = element.querySelector('.attribute-button');
+            if (button) {
+                button.style.borderRadius = shape === 'circle' ? '50%' : '0';
+                switch (shape) {
+                    case 'triangle':
+                        button.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
+                        break;
+                    case 'square':
+                        button.style.clipPath = 'none';
+                        break;
+                    case 'pentagon':
+                        button.style.clipPath = 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)';
+                        break;
+                    case 'hexagon':
+                        button.style.clipPath = 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
+                        break;
+                    case 'heptagon':
+                        button.style.clipPath = 'polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)';
+                        break;
+                    case 'octagon':
+                        button.style.clipPath = 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)';
+                        break;
+                    case 'nonagon':
+                        button.style.clipPath = 'polygon(50% 0%, 83% 12%, 100% 43%, 94% 78%, 68% 100%, 32% 100%, 6% 78%, 0% 43%, 17% 12%)';
+                        break;
+                    case 'decagon':
+                        button.style.clipPath = 'polygon(50% 0%, 80% 10%, 100% 35%, 100% 70%, 80% 90%, 50% 100%, 20% 90%, 0% 70%, 0% 35%, 20% 10%)';
+                        break;
+                    case 'hendecagon':
+                        button.style.clipPath = 'polygon(50% 0%, 76% 7%, 94% 26%, 100% 50%, 94% 74%, 76% 93%, 50% 100%, 24% 93%, 6% 74%, 0% 50%, 6% 26%, 24% 7%)';
+                        break;
+                    default:
+                        button.style.clipPath = 'none';
+                }
+            }
+        }
+
+        function cycleAttribute(element) {
+            const currentAttribute = element.querySelector('.attribute-label').textContent;
+            const currentIndex = attributes.indexOf(currentAttribute);
+            const nextIndex = (currentIndex + 1) % attributes.length;
+            const nextAttribute = attributes[nextIndex];
+
+            element.querySelector('.attribute-label').textContent = nextAttribute;
+            element.querySelector('.attribute-shorthand').textContent = nextAttribute.substring(0, 3);
+        }
+
+        function chooseFile(element) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (element.dataset.type === 'port-box') {
+                        element.style.backgroundImage = `url(%24%7be.target.html)`;
+                        element.style.backgroundSize = 'cover';
+                        element.style.backgroundPosition = 'center';
+                        element.textContent = '';
+                    } else if (element.dataset.type === 'graphic-element') {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'contain';
+                        element.innerHTML = '';
+                        element.appendChild(img);
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        readyBtn.addEventListener('click', () => {
+            startMenu.style.display = 'none';
+            updateLayout();
+            updateModeVisibility();
+            updateElementChooser();
+        });
+
+        // Top bar button event listeners
+        document.getElementById('NewPageButton').addEventListener('click', () => {
+            canvas.innerHTML = '';
+        });
+
+        document.getElementById('SaveButton').addEventListener('click', () => {
+            const modal = document.getElementById('save-modal');
+            const saveNameInput = document.getElementById('save-name');
+            const saveBtn = document.getElementById('save-btn');
+
+            saveNameInput.value = FilePrefix + 'Default';
+            modal.style.display = 'block';
+
+            saveBtn.onclick = function() {
+                const saveName = saveNameInput.value;
+                const pageData = {
+                    elements: Array.from(document.querySelectorAll('.page-element')).map(el => ({
+                        type: el.dataset.type,
+                        content: el.innerHTML,
+                        x: el.getAttribute('data-x'),
+                        y: el.getAttribute('data-y'),
+                        width: el.style.width,
+                        height: el.style.height
+                    })),
+                    layout: LayoutType,
+                    grid: boolGrid,
+                    hasStats: boolHasStats,
+                    customTrans: CustomTrans
+                };
+
+                // Save to cookie
+                document.cookie = `${saveName}=${JSON.stringify(pageData)}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
+
+                // Download file
+                const blob = new Blob([JSON.stringify(pageData)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${saveName}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('FolderButton').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const pageData = JSON.parse(e.target.result);
+                    loadPageData(pageData);
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+
+        document.getElementById('LayoutButton').addEventListener('click', toggleEditMode);
+
+        document.getElementById('LinkButton').addEventListener('click', toggleGridMode);
+
+        document.getElementById('PalButton').addEventListener('click', () => {
+            const modal = document.getElementById('palette-modal');
+            const select = document.getElementById('palette-select');
+            const colorBoxes = document.getElementById('color-boxes');
+            const applyBtn = document.getElementById('apply-palette');
+            const cancelBtn = document.getElementById('cancel-palette');
+
+            // Populate palette choices
+            const palettes = getPalettes();
+            select.innerHTML = palettes.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+
+            function updateColorBoxes() {
+                const selectedPalette = palettes.find(p => p.name === select.value);
+                colorBoxes.innerHTML = selectedPalette.colors.map(color => 
+                    `<div style="width:16px;height:16px;background-color:${color};display:inline-block;margin-right:5px;"></div>`
+                ).join('');
+            }
+
+            select.onchange = updateColorBoxes;
+            updateColorBoxes();
+
+            modal.style.display = 'block';
+
+            applyBtn.onclick = function() {
+                const selectedPalette = palettes.find(p => p.name === select.value);
+                applyPaletteToPage(selectedPalette);
+                modal.style.display = 'none';
+            };
+
+            cancelBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('PicButton').addEventListener('click', () => {
+            const modal = document.getElementById('pic-modal');
+            const portraitBtn = document.getElementById('portrait-btn');
+            const backgroundBtn = document.getElementById('background-btn');
+
+            modal.style.display = 'block';
+
+            portraitBtn.onclick = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function(event) {
+                    const file = event.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const portBox = document.querySelector('.port-box');
+                            if (portBox) {
+                                portBox.style.backgroundImage = `url(%24%7be.target.html)`;
+                                portBox.style.backgroundSize = 'cover';
+                                portBox.style.backgroundPosition = 'center';
+                                portBox.textContent = '';
+                            } else {
+                                createPortBoxElement();
+                                const newPortBox = document.querySelector('.port-box');
+                                newPortBox.style.backgroundImage = `url(%24%7be.target.html)`;
+                                newPortBox.style.backgroundSize = 'cover';
+                                newPortBox.style.backgroundPosition = 'center';
+                                newPortBox.textContent = '';
+                            }
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+                modal.style.display = 'none';
+            };
+
+            backgroundBtn.onclick = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function(event) {
+                    const file = event.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const bgModal = document.getElementById('background-modal');
+                        const bgTypeSelect = document.getElementById('background-type');
+                        const transparencyInput = document.getElementById('transparency');
+                        const saveBgBtn = document.getElementById('save-background');
+
+                        bgModal.style.display = 'block';
+
+                        saveBgBtn.onclick = function() {
+                            const bgType = bgTypeSelect.value;
+                            const transparency = transparencyInput.value;
+
+                            if (bgType === 'behind-elements') {
+                                canvas.style.backgroundImage = `url(%24%7be.target.html)`;
+                                canvas.style.backgroundSize = 'cover';
+                                canvas.style.backgroundPosition = 'center';
+                                document.querySelectorAll('.page-element').forEach(el => {
+                                    el.style.backgroundColor = `rgba(255, 255, 255, ${transparency / 100})`;
+                                });
+                            } else {
+                                document.body.style.backgroundImage = `url(%24%7be.target.html)`;
+                                document.body.style.backgroundSize = 'cover';
+                                document.body.style.backgroundPosition = 'center';
+                                canvas.style.backgroundColor = `rgba(255, 255, 255, ${transparency / 100})`;
+                                document.querySelectorAll('.page-element').forEach(el => {
+                                    el.style.backgroundColor = `rgba(255, 255, 255, ${transparency / 100})`;
+                                });
+                            }
+
+                            bgModal.style.display = 'none';
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('SettingsButton').addEventListener('click', () => {
+            const modal = document.getElementById('settings-modal');
+            const mtButton = document.getElementById('mt-button');
+            const statsAssignBtn = document.getElementById('stats-assign-btn');
+            const gridTypeBtn = document.getElementById('grid-type-btn');
+            const customTransInput = document.getElementById('custom-trans');
+
+            mtButton.textContent = LayoutType;
+            statsAssignBtn.textContent = `Stats: ${boolHasStats ? 'On' : 'Off'}`;
+            gridTypeBtn.textContent = `Grid Type: ${boolGrid ? 'Grid' : 'Dots'}`;
+            customTransInput.value = CustomTrans;
+
+            modal.style.display = 'block';
+
+            mtButton.onclick = function() {
+                const layouts = ['PC', 'Side', 'Apple', 'Phone'];
+                const currentIndex = layouts.indexOf(LayoutType);
+                LayoutType = layouts[(currentIndex + 1) % layouts.length];
+                mtButton.textContent = LayoutType;
+                updateLayout();
+            };
+
+            statsAssignBtn.onclick = function() {
+                boolHasStats = !boolHasStats;
+                statsAssignBtn.textContent = `Stats: ${boolHasStats ? 'On' : 'Off'}`;
+                document.querySelectorAll('.attribute-element').forEach(el => {
+                    const diceIcon = el.querySelector('.attribute-label');
+                    diceIcon.textContent = boolHasStats ? el.querySelector('.attribute-label').textContent : '🎲';
+                });
+            };
+
+            gridTypeBtn.onclick = function() {
+                boolGrid = !boolGrid;
+                gridTypeBtn.textContent = `Grid Type: ${boolGrid ? 'Grid' : 'Dots'}`;
+                createGrid();
+            };
+
+            customTransInput.onchange = function() {
+                CustomTrans = parseInt(customTransInput.value);
+                document.querySelectorAll('.page-element').forEach(el => {
+                    el.style.backgroundColor = `rgba(255, 255, 255, ${CustomTrans / 100})`;
+                });
+            };
+        });
+
+        document.getElementById('HelpButton').addEventListener('click', () => {
+            const modal = document.getElementById('help-modal');
+            const helpContent = document.getElementById('help-content');
+            const nextButton = document.getElementById('help-next');
+
+            const helpText = {
+                '🎲': 'New Page: Create a new character sheet',
+                '💾': 'Save: Save the current character sheet',
+                '📂': 'Folder: Open a saved character sheet',
+                '🖌️': 'Layout: Toggle edit mode for dragging and resizing elements',
+                '🔗': 'Link: Toggle grid mode for snapping elements to grid',
+                '🎨': 'Palette: Choose a color palette for the sheet',
+                '🖼️': 'Picture: Add portrait or background image',
+                '⚙️': 'Settings: Adjust layout type, stats assignment, and grid type',
+                '❓': 'Help: Show this help information',
+                '📥': 'Import: Import character from D&D Beyond',
+                '🔶': 'Diamond: Placeholder for future functionality'
+            };
+
+            function showTopBarHelp() {
+                helpContent.innerHTML = Object.entries(helpText).map(([emoji, description]) => 
+                    `<p><strong>${emoji}</strong>: ${description}</p>`
+                ).join('');
+                nextButton.textContent = '➡️';
+                nextButton.onclick = showPageElementHelp;
+            }
+
+            function showPageElementHelp() {
+                helpContent.innerHTML = `
+                    <h3>Page Elements:</h3>
+                    <ul>
+                        <li>Attribute: Individual D&D stat</li>
+                        <li>Grouped Attributes: All six D&D stats in one container</li>
+                        <li>Race Selector: Choose character race</li>
+                        <li>Class Selector: Choose character class</li>
+                        <li>Skills: List of all D&D skills</li>
+                        <li>Port Box: Character portrait</li>
+                        <li>Magic Sheet: Spell list</li>
+                        <li>Background History: Character background</li>
+                        <li>HP: Hit Points</li>
+                        <li>AC: Armor Class</li>
+                        <li>Initiative: Initiative modifier</li>
+                        <li>Rest: Toggle for resting</li>
+                        <li>Advantage: Toggle for advantage</li>
+                        <li>Spell Slots: Available spell slots</li>
+                        <li>Actions: Combat actions</li>
+                        <li>Worn Armor: Equipped armor</li>
+                        <li>Choose Spells Simple: Spell selector</li>
+                        <li>Currency: Character's money</li>
+                        <li>Character Name: Input for character name</li>
+                        <li>Messages: Embedded communication iframe</li>
+                        <li>Spell Grid+: Extended spell list</li>
+                        <li>Character Level: Character's current level</li>
+                    </ul>
+                `;
+                nextButton.textContent = '⬅️';
+                nextButton.onclick = showTopBarHelp;
+            }
+
+            showTopBarHelp();
+            modal.style.display = 'block';
+        });
+
+        osDice.addEventListener('click', () => {
+            const modal = document.getElementById('dice-roller-modal');
+            const content = document.getElementById('dice-roller-content');
+
+            const diceTypes = [4, 6, 8, 10, 12, 20, 100];
+
+            content.innerHTML = diceTypes.map(type => `
+                <div>
+                    <button class="roll-dice" data-type="${type}">Roll d${type}</button>
+                    <input type="number" min="1" value="1" class="dice-count" data-type="${type}">
+                    <span class="dice-result" data-type="${type}"></span>
+                </div>
+            `).join('');
+
+            modal.style.display = 'block';
+
+            content.addEventListener('click', (event) => {
+                if (event.target.classList.contains('roll-dice')) {
+                    const type = parseInt(event.target.dataset.type);
+                    const count = parseInt(document.querySelector(`.dice-count[data-type="${type}"]`).value);
+                    const results = Array.from({length: count}, () => rollDie(type));
+                    const total = results.reduce((sum, roll) => sum + roll, 0);
+                    document.querySelector(`.dice-result[data-type="${type}"]`).textContent = 
+                        `Result: ${total} (${results.join(', ')})`;
+                    
+                    // Update DiceResults list
+                    const diceResultsElement = document.getElementById('dice-results');
+                    diceResultsElement.innerHTML = `Last roll: ${count}d${type} = ${total}`;
+                    diceResultsElement.style.display = 'block';
+                    setTimeout(() => {
+                        diceResultsElement.style.display = 'none';
+                    }, 3000);
+                }
+            });
+        });
+
+        elementChooserButton.addEventListener('click', () => {
+            const modal = document.getElementById('element-chooser-modal');
+            const addBtn = document.getElementById('add-element');
+            const closeBtn = document.getElementById('close-element-chooser');
+
+            modal.style.display = 'block';
+
+            addBtn.onclick = function() {
+                const checkedElements = Array.from(document.querySelectorAll('#element-checkboxes input:checked')).map(input => input.value);
+                checkedElements.forEach(element => {
+                    switch (element) {
+                        case 'Attribute':
+                            createAttributeElement(attributes[Math.floor(Math.random() * attributes.length)]);
+                            break;
+                        case 'Grouped Attributes':
+                            createGroupedAttributesElement();
+                            break;
+                        case 'Race Selector':
+                            createRaceSelectorElement();
+                            break;
+                        case 'Class Selector':
+                            createClassSelectorElement();
+                            break;
+                        case 'Skills':
+                            createSkillsElement();
+                            break;
+                        case 'Port Box':
+                            createPortBoxElement();
+                            break;
+                        case 'Magic Sheet':
+                            createMagicSheetElement();
+                            break;
+                        case 'Background History':
+                            createBackgroundHistoryElement();
+                            break;
+                        case 'Magic Sheet+':
+                            createMagicSheetPlusElement();
+                            break;
+                        case 'HP':
+                            createHPElement();
+                            break;
+                        case 'AC':
+                            createACElement();
+                            break;
+                        case 'Initiative':
+                            createInitElement();
+                            break;
+                        case 'Rest':
+                            createRestElement();
+                            break;
+                        case 'Advantage':
+                            createAdvantageElement();
+                            break;
+                        case 'Spell Slots':
+                            createSpellSlotsElement();
+                            break;
+                        case 'Actions':
+                            createActionsElement();
+                            break;
+                        case 'Worn Armor':
+                            createWornArmorElement();
+                            break;
+                        case 'Choose Spells Simple':
+                            createChooseSpellsSimpleElement();
+                            break;
+                        case 'Currency':
+                            createCurrencyElement();
+                            break;
+                        case 'Character Name':
+                            createCharNameElement();
+                            break;
+                        case 'Messages':
+                            createMessagesElement();
+                            break;
+                        case 'Spell Grid+':
+                            createSpellGridPlusElement();
+                            break;
+                        case 'Character Level':
+                            createCharLevelElement();
+                            break;
+                    }
+                });
+                modal.style.display = 'none';
+            };
+
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            };});
+
+        // Import D&D Beyond character
+        document.getElementById('ImportButton').addEventListener('click', () => {
+            const modal = document.getElementById('import-modal');
+            const urlInput = document.getElementById('ddb-url');
+            const importBtn = document.getElementById('import-character');
+
+            modal.style.display = 'block';
+
+            importBtn.onclick = function() {
+                const url = urlInput.value;
+                // Here you would typically make an API call to fetch the character data
+                // For this example, we'll just log the URL and close the modal
+                console.log('Importing character from:', url);
+                modal.style.display = 'none';
+                // You would then process the returned data and create the necessary elements
+            };
+        });
+
+        // Diamond button (placeholder)
+        document.getElementById('DiamondButton').addEventListener('click', () => {
+            alert('Diamond button functionality not implemented yet.');
+        });
+
+        // Close modal when clicking on the close button or outside the modal
+        document.querySelectorAll('.modal .close').forEach(closeBtn => {
+            closeBtn.onclick = function() {
+                this.closest('.modal').style.display = 'none';
+            };
+        });
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        };
+
+        function getPalettes() {
+            return [
+                { name: 'Classic', colors: ['#F8F8F8', '#333333', '#FFFFFF', '#000000', '#4A4A4A', '#828282'] },
+                { name: 'Parchment', colors: ['#FFF1E0', '#704214', '#B7916C', '#4B2E0E', '#8C6239', '#D4A76A'] },
+                { name: 'Arcane', colors: ['#1A1A2E', '#16213E', '#0F3460', '#E94560', '#FFFFFF', '#533483'] },
+                { name: 'Nature', colors: ['#E1F0C4', '#6B7F48', '#8FA54D', '#2E4010', '#4A5E2F', '#BACF65'] },
+                { name: 'Dungeon', colors: ['#2C3333', '#395B64', '#A5C9CA', '#E7F6F2', '#2E0F15', '#8B1E3F'] },
+                // Add 45 more unique palettes here
+            ];
+        }
+
+        function applyPaletteToPage(palette) {
+            document.body.style.backgroundColor = palette.colors[0];
+            document.body.style.color = palette.colors[1];
+            canvas.style.backgroundColor = palette.colors[2];
+            document.querySelectorAll('.page-element').forEach(el => {
+                el.style.backgroundColor = palette.colors[3];
+                el.style.color = palette.colors[4];
+                el.style.borderColor = palette.colors[5];
+            });
+        }
+
+        function loadPageData(pageData) {
+            canvas.innerHTML = '';
+            pageData.elements.forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'page-element';
+                div.dataset.type = el.type;
+                div.innerHTML = el.content;
+                div.style.transform = `translate(${el.x}px, ${el.y}px)`;
+                div.style.width = el.width;
+                div.style.height = el.height;
+                div.setAttribute('data-x', el.x);
+                div.setAttribute('data-y', el.y);
+                canvas.appendChild(div);
+
+                interact(div)
+                    .draggable({
+                        inertia: true,
+                        modifiers: [
+                            interact.modifiers.restrictRect({
+                                restriction: 'parent',
+                                endOnly: true
+                            })
+                        ],
+                        autoScroll: true,
+                        listeners: {
+                            move: dragMoveListener,
+                        }
+                    })
+                    .resizable({
+                        edges: { bottom: true, right: true },
+                        listeners: {
+                            move: resizeMoveListener
+                        },
+                    })
+            });
+
+            LayoutType = pageData.layout;
+            boolGrid = pageData.grid;
+            boolHasStats = pageData.hasStats;
+            CustomTrans = pageData.customTrans || 95;
+
+            updateLayout();
+            createGrid();
+            updateModeVisibility();
+        }
+
+        function rollDie(sides) {
+            return Math.floor(Math.random() * sides) + 1;
+        }
+
+        // Initialize the page
+        createGrid();
+        updateLayout();
+        updateModeVisibility();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'8bdb63174d7c5cae',t:'MTcyNTQyNTcyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='../../cdn-cgi/challenge-platform/h/b/scripts/jsd/a5b175b00260/maind41d.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"8bdb63174d7c5cae","version":"2024.8.0","r":1,"serverTiming":{"name":{"cfL4":true}},"token":"5562e2e56e7244b2af1869a8c731adb3","b":1}' crossorigin="anonymous"></script>
+</body>
+
+<!-- Mirrored from caisual.com/games/6zh1a6dc6xcq1a69/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 04 Sep 2024 04:55:27 GMT -->
+</html>

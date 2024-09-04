@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e Sheet Designer</title>
+    <meta name="description" content="Create and customize your own D&D 5e character sheet layout with draggable elements.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: relative;
+            width: calc(100vw - 50px);
+            height: 100vh;
+            overflow: hidden;
+            margin-left: 50px;
+            border: 1px solid #ccc;
+            background-color: #ffffff;
+        }
+
+        .page-element {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px;
+            cursor: move;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: #007bff;
+            bottom: 0;
+            right: 0;
+            cursor: se-resize;
+        }
+
+        #start-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+        }
+
+        #start-menu button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #start-menu button:hover {
+            background-color: #0056b3;
+        }
+
+        #top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 50px;
+            height: 100%;
+            background-color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        #top-bar button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #dice-results {
+            position: fixed;
+            bottom: 60px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #os-dice {
+            position: fixed;
+            bottom: 74px;
+            left: 74px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        #element-chooser-button {
+            position: fixed;
+            bottom: 74px;
+            left: 134px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
+        }
+
+        #version-info {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 12px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+
+<body>
+    <div id="start-menu">
+        <h1>D&D 5e Character Sheet Designer</h1>
+        <p>Drag elements to position them. Use the bottom-right corner to resize.</p>
+        <button id="ready-btn">Ready</button>
+        <div id="version-info">Version 1.0.0 (Build 20230515)</div>
+    </div>
+    <div id="top-bar">
+        <button id="SaveButton" title="Save">💾</button>
+        <button id="FolderButton" title="Folder">📂</button>
+        <button id="LayoutButton" title="Layout">🖌️</button>
+        <button id="LinkButton" title="Link">🔗</button>
+        <button id="PalButton" title="Palette">🎨</button>
+        <button id="PicButton" title="Picture">🖼️</button>
+        <button id="SettingsButton" title="Settings">⚙️</button>
+        <button id="HelpButton" title="Help">❓</button>
+        <button id="overflow-button" title="More">🔶</button>
+    </div>
+    <div id="canvas"></div>
+    <div id="grid"></div>
+    <div id="dice-results">
+        <button id="pin-button">📌</button>
+        <div id="dice-results-content"></div>
+    </div>
+    <button id="os-dice">🎲</button>
+    <button id="element-chooser-button">➕</button>
+
+    <!-- Modals -->
+    <div id="pic-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <button id="portrait-btn">Portrait</button>
+            <button id="background-btn">Background</button>
+        </div>
+    </div>
+
+    <div id="background-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <select id="background-type" class="browser-default">
+                <option value="behind-elements">Behind PageElements</option>
+                <option value="behind-everything">Behind Everything</option>
+            </select>
+            <input type="number" id="transparency" value="90" min="0" max="100">
+            <button id="save-background">Save</button>
+        </div>
+    </div>
+
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Choose save name...</h2>
+            <input type="text" id="save-name">
+            <button id="save-btn">Save</button>
+        </div>
+    </div>
+
+    <div id="palette-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <select id="palette-select" class="browser-default"></select>
+            <div id="color-boxes"></div>
+            <button id="apply-palette">Apply</button>
+            <button id="cancel-palette">Cancel</button>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Help</h2>
+            <div id="help-content"></div>
+            <button id="help-next">➡️</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <button id="mt-button"></button>
+            <button id="stats-assign-btn"></button>
+            <button id="grid-type-btn"></button>
+            <div>
+                <label for="custom-trans">Element Transparency:</label>
+                <input type="number" id="custom-trans" min="0" max="100" value="95">
+            </div>
+            <button id="updates-btn">Updates</button>
+        </div>
+    </div>
+
+    <div id="element-chooser-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <select id="element-select" class="browser-default"></select>
+            <button id="add-element">Add to Sheet</button>
+            <button id="close-element-chooser">Close</button>
+        </div>
+    </div>
+
+    <div id="dice-roller-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Dice Roller</h2>
+            <div id="dice-roller-content"></div>
+        </div>
+    </div>
+
+    <div id="updates-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Updates</h2>
+            <div id="updates-box">
+                <!-- Updates will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="overflow-box">
+        <span class="close">&times;</span>
+        <button id="ImportButton" title="Import D&D Beyond Character">📥 Import Character</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const startMenu = document.getElementById('start-menu');
+        const readyBtn = document.getElementById('ready-btn');
+        const grid = document.getElementById('grid');
+        const diceResults = document.getElementById('dice-results');
+        const diceResultsContent = document.getElementById('dice-results-content');
+        const pinButton = document.getElementById('pin-button');
+        const osDice = document.getElementById('os-dice');
+        const elementChooserButton = document.getElementById('element-chooser-button');
+        const overflowButton = document.getElementById('overflow-button');
+        const overflowBox = document.getElementById('overflow-box');
+
+        // Global variables
+        let LayoutType = 'Side';
+        let boolGrid = true;
+        let boolHasStats = false;
+        const FilePrefix = 'DnDCSC-';
+        let EditMode = false;
+        let GridMode = false;
+        let CustomTrans = 95;
+        let isPinned = false;
+
+        const attributes = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+        const skills = [
+            { name: 'Acrobatics', attribute: 'DEX' },
+            { name: 'Animal Handling', attribute: 'WIS' },
+            { name: 'Arcana', attribute: 'INT' },
+            { name: 'Athletics', attribute: 'STR' },
+            { name: 'Deception', attribute: 'CHA' },
+            { name: 'History', attribute: 'INT' },
+            { name: 'Insight', attribute: 'WIS' },
+            { name: 'Intimidation', attribute: 'CHA' },
+            { name: 'Investigation', attribute: 'INT' },
+            { name: 'Medicine', attribute: 'WIS' },
+            { name: 'Nature', attribute: 'INT' },
+            { name: 'Perception', attribute: 'WIS' },
+            { name: 'Performance', attribute: 'CHA' },
+            { name: 'Persuasion', attribute: 'CHA' },
+            { name: 'Religion', attribute: 'INT' },
+            { name: 'Sleight of Hand', attribute: 'DEX' },
+            { name: 'Stealth', attribute: 'DEX' },
+            { name: 'Survival', attribute: 'WIS' }
+        ];
+
+        const races = ['Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Elf', 'Half-Orc', 'Tiefling', 'Dragonborn'];
+        const classes = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard'];
+
+        function createPageElement(type, content) {
+            const div = document.createElement('div');
+            div.className = 'page-element';
+            div.dataset.type = type;
+            div.innerHTML = content;
+            div.style.left = `${50 + Math.random() * 100}px`;
+            div.style.top = `${50 + Math.random() * 100}px`;
+            div.style.backgroundColor = `rgba(255, 255, 255, ${CustomTrans / 100})`;
+            canvas.appendChild(div);
+
+            if (EditMode || GridMode) {
+                const removeButton = document.createElement('button');
+                removeButton.innerHTML = '❌';
+                removeButton.className = 'remove-element';
+                removeButton.onclick = () => div.remove();
+                div.appendChild(removeButton);
+            }
+
+            if (EditMode && GridMode && type.startsWith('attribute')) {
+                const shapeButton = document.createElement('button');
+                shapeButton.innerHTML = '🔲';
+                shapeButton.className = 'shape-cycle';
+                shapeButton.onclick = () => cycleShape(div);
+                div.appendChild(shapeButton);
+
+                const attributeCycleButton = document.createElement('button');
+                attributeCycleButton.innerHTML = '➡️';
+                attributeCycleButton.className = 'attribute-cycle';
+                attributeCycleButton.onclick = () => cycleAttribute(div);
+                div.appendChild(attributeCycleButton);
+            }
+
+            interact(div)
+                .draggable({
+                    inertia: true,
+                    modifiers: [
+                        interact.modifiers.restrictRect({
+                            restriction: 'parent',
+                            endOnly: true
+                        })
+                    ],
+                    autoScroll: true,
+                    listeners: {
+                        move: dragMoveListener,
+                    }
+                })
+                .resizable({
+                    edges: { bottom: true, right: true },
+                    listeners: {
+                        move: resizeMoveListener
+                    },
+                })
+        }
+
+        function dragMoveListener(event) {
+            const target = event.target;
+            const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+            const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+            target.style.transform = `translate(${x}px, ${y}px)`;
+            target.setAttribute('data-x', x);
+            target.setAttribute('data-y', y);
+
+            if (GridMode) {
+                const gridSize = 16;
+                const snappedX = Math.round(x / gridSize) * gridSize;
+                const snappedY = Math.round(y / gridSize) * gridSize;
+                target.style.transform = `translate(${snappedX}px, ${snappedY}px)`;
+                target.setAttribute('data-x', snappedX);
+                target.setAttribute('data-y', snappedY);
+            }
+        }
+
+        function resizeMoveListener(event) {
+            const target = event.target;
+            const x = parseFloat(target.getAttribute('data-x') || 0);
+            const y = parseFloat(target.getAttribute('data-y') || 0);
+
+            Object.assign(target.style, {
+                width: `${event.rect.width}px`,
+                height: `${event.rect.height}px`,
+                transform: `translate(${x}px, ${y}px)`
+            });
+        }
+
+        function createAttributeElement(attribute) {
+            const content = `
+                <button class="attribute-button">10</button>
+                <div class="attribute-modifier">+0</div>
+                <div class="attribute-label">${attribute}</div>
+            `;
+            createPageElement('attribute', content);
+        }
+
+        function createGroupedAttributesElement() {
+            let content = '<div class="grouped-attributes">';
+            attributes.forEach(attr => {
+                content += `
+                    <div class="attribute-element">
+                        <button class="attribute-button">10</button>
+                        <div class="attribute-modifier">+0</div>
+                        <div class="attribute-label">${attr}</div>
+                    </div>
+                `;
+            });
+            content += '</div>';
+            createPageElement('grouped-attributes', content);
+        }
+
+        function createRaceSelectorElement() {
+            let content = `<select class="race-selector browser-default">`;
+            races.forEach(race => {
+                content += `<option value="${race}">${race}</option>`;
+            });
+            content += '</select>';
+            createPageElement('race-selector', content);
+        }
+
+        function createClassSelectorElement() {
+            let content = `<select class="class-selector browser-default">`;
+            classes.forEach(cls => {
+                content += `<option value="${cls}">${cls}</option>`;
+            });
+            content += '</select>';
+            createPageElement('class-selector', content);
+        }
+
+        function createSkillsElement() {
+            let content = '<div class="skills-element">';
+            skills.forEach(skill => {
+                content += `<button class="skill-button" data-attribute="${skill.attribute}">${skill.name} - ${skill.attribute} [+0]</button>`;
+            });
+            content += '</div>';
+            createPageElement('skills', content);
+        }
+
+        function createPortBoxElement() {
+            const content = '<div class="port-box">Portrait</div>';
+            createPageElement('port-box', content);
+        }
+
+        function createMagicSheetElement() {
+            let content = '<div class="magic-sheet">';
+            content += '<textarea placeholder="Spells"></textarea>';
+            for (let i = 1; i <= 3; i++) {
+                content += `<textarea placeholder="${i} level spells"></textarea>`;
+            }
+            content += '</div>';
+            createPageElement('magic-sheet', content);
+        }
+
+        function createBackgroundHistoryElement() {
+            const content = '<textarea rows="2" placeholder="Background History"></textarea>';
+            createPageElement('background-history', content);
+        }
+
+        function createMagicSheetPlusElement() {
+            let content = '<div class="magic-sheet">';
+            content += '<textarea placeholder="Cantrips"></textarea>';
+            for (let i = 1; i <= 3; i++) {
+                content += '<div class="spell-row">';
+                for (let j = 1; j <= 3; j++) {
+                    content += `<textarea placeholder="${i} level spells"></textarea>`;
+                }
+                content += '</div>';
+            }
+            content += '</div>';
+            createPageElement('magic-sheet-plus', content);
+        }
+
+        function createHPElement() {
+            const content = `
+                <div class="hp-element">
+                    <label>HP:</label>
+                    <input type="number" min="0" value="0">
+                    <button class="hp-up">▲</button>
+                    <button class="hp-down">▼</button>
+                </div>
+            `;
+            createPageElement('hp', content);
+        }
+
+        function createACElement() {
+            const content = `
+                <div class="ac-element">
+                    <label>AC:</label>
+                    <span class="ac-value">10</span>
+                </div>
+            `;
+            createPageElement('ac', content);
+        }
+
+        function createInitElement() {
+            const content = `
+                <div class="init-element">
+                    <label>Initiative:</label>
+                    <span class="init-value">+0</span>
+                </div>
+            `;
+            createPageElement('init', content);
+        }
+
+        function createRestElement() {
+            const content = `
+                <div class="toggle-element">
+                    <label>Rest:</label>
+                    <input type="checkbox">
+                </div>
+            `;
+            createPageElement('rest', content);
+        }
+
+        function createAdvantageElement() {
+            const content = `
+                <div class="toggle-element">
+                    <label>Advantage:</label>
+                    <input type="checkbox">
+                </div>
+            `;
+            createPageElement('advantage', content);
+        }
+
+        function createSpellSlotsElement() {
+            let content = '<div class="spell-slots">';
+            for (let i = 1; i <= 10; i++) {
+                content += `<input type="number" min="0" value="0">`;
+            }
+            content += '</div>';
+            createPageElement('spell-slots', content);
+        }
+
+        function createActionsElement() {
+            const content = `
+                <div class="actions-element">
+                    <div class="actions-row">
+                        <select class="weapon-select browser-default"></select>
+                        <button class="dex-mod">+0</button>
+                        <button class="damage-roll">Roll</button>
+                    </div>
+                    <button class="add-action">➕</button>
+                </div>
+            `;
+            createPageElement('actions', content);
+        }
+
+        function createWornArmorElement() {
+            const content = `
+                <div class="worn-armor-element">
+                    <div class="worn-armor-row">
+                        <select class="armor-select browser-default"></select>
+                        <span class="armor-class">10</span>
+                        <label><input type="checkbox"> Add to AC</label>
+                    </div>
+                    <button class="add-armor">➕</button>
+                </div>
+            `;
+            createPageElement('worn-armor', content);
+        }
+
+        function createChooseSpellsSimpleElement() {
+            const content = `
+                <div class="choose-spells-simple">
+                    <select class="spell-select browser-default"></select>
+                    <button class="add-spell">Add to list</button>
+                </div>
+            `;
+            createPageElement('choose-spells-simple', content);
+        }
+
+        function createCurrencyElement() {
+            const currencies = ['Copper', 'Silver', 'Gold', 'Electrum', 'Platinum', 'Gems'];
+            let content = '<div class="currency-element">';
+            currencies.forEach(currency => {
+                content += `
+                    <div class="currency-row">
+                        <label>${currency}:</label>
+                        <input type="number" min="0" value="0">
+                        <button class="currency-up">▲</button>
+                        <button class="currency-down">▼</button>
+                    </div>
+                `;
+            });
+            content += '</div>';
+            createPageElement('currency', content);
+        }
+
+        function createCharNameElement() {
+            const content = `
+                <div class="char-name">
+                    <label style="display: none;"></label>
+                    <input type="text" placeholder="Character Name">
+                    <button class="char-name-submit">⏎</button>
+                </div>
+            `;
+            createPageElement('char-name', content);
+        }
+
+        function createCharacterNameElement(name) {
+            const content = `<h2>${name}</h2>`;
+            createPageElement('character-name', content);
+        }
+
+        function createGraphicsElement() {
+            const content = '<img src="" alt="Graphics Element" class="graphics-element">';
+            createPageElement('graphics-element', content);
+        }
+
+        function updateElementChooser() {
+            const elementSelect = document.getElementById('element-select');
+            const elements = [
+                'Attribute', 'Grouped Attributes', 'Race Selector', 'Class Selector', 'Skills',
+                'Port Box', 'Magic Sheet', 'Background History', 'Magic Sheet+', 'HP',
+                'AC', 'Initiative', 'Rest', 'Advantage', 'Spell Slots', 'Actions',
+                'Worn Armor', 'Choose Spells Simple', 'Currency', 'Character Name', 'Graphics Element'
+            ];
+            elementSelect.innerHTML = elements.map(el => `<option value="${el}">${el}</option>`).join('');
+        }
+
+        function createGrid() {
+            grid.innerHTML = '';
+            const gridSize = 16;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            if (boolGrid) {
+                for (let x = 0; x < width; x += gridSize) {
+                    const verticalLine = document.createElement('div');
+                    verticalLine.className = 'grid-line';
+                    verticalLine.style.left = `${x}px`;
+                    verticalLine.style.top = '0';
+                    verticalLine.style.width = '1px';
+                    verticalLine.style.height = '100%';
+                    grid.appendChild(verticalLine);
+                }
+
+                for (let y = 0; y < height; y += gridSize) {
+                    const horizontalLine = document.createElement('div');
+                    horizontalLine.className = 'grid-line';
+                    horizontalLine.style.left = '0';
+                    horizontalLine.style.top = `${y}px`;
+                    horizontalLine.style.width = '100%';
+                    horizontalLine.style.height = '1px';
+                    grid.appendChild(horizontalLine);
+                }
+            } else {
+                for (let x = 0; x < width; x += gridSize) {
+                    for (let y = 0; y < height; y += gridSize) {
+                        const dot = document.createElement('div');
+                        dot.className = 'grid-dot';
+                        dot.style.left = `${x}px`;
+                        dot.style.top = `${y}px`;
+                        grid.appendChild(dot);
+                    }
+                }
+            }
+        }
+
+        function updateLayout() {
+            const topBar = document.getElementById('top-bar');
+            switch (LayoutType) {
+                case 'PC':
+                    topBar.style.top = 'auto';
+                    topBar.style.bottom = '0';
+                    topBar.style.left = '0';
+                    topBar.style.width = '100%';
+                    topBar.style.height = '50px';
+                    topBar.style.flexDirection = 'row';
+                    topBar.style.justifyContent = 'flex-start';
+                    canvas.style.marginTop = '0';
+                    canvas.style.marginBottom = '50px';
+                    break;
+                case 'Side':
+                    topBar.style.top = '0';
+                    topBar.style.left = '0';
+                    topBar.style.width = '50px';
+                    topBar.style.height = '100%';
+                    topBar.style.flexDirection = 'column';
+                    topBar.style.justifyContent = 'flex-start';
+                    canvas.style.marginLeft = '50px';
+                    canvas.style.marginTop = '0';
+                    break;
+                case 'Apple':
+                    topBar.style.top = 'auto';
+                    topBar.style.bottom = '0';
+                    topBar.style.left = '25%';
+                    topBar.style.width = '50%';
+                    topBar.style.height = '50px';
+                    topBar.style.flexDirection = 'row';
+                    topBar.style.justifyContent = 'center';
+                    canvas.style.marginTop = '0';
+                    canvas.style.marginBottom = '50px';
+                    break;
+                case 'Phone':
+                    topBar.style.top = '0';
+                    topBar.style.left = '0';
+                    topBar.style.width = '100%';
+                    topBar.style.height = '50px';
+                    topBar.style.flexDirection = 'row';
+                    topBar.style.justifyContent = 'flex-start';
+                    canvas.style.marginTop = '50px';
+                    canvas.style.marginLeft = '0';
+                    break;
+            }
+        }
+
+        function toggleEditMode() {
+            EditMode = !EditMode;
+            updateModeVisibility();
+        }
+
+        function toggleGridMode() {
+            GridMode = !GridMode;
+            updateModeVisibility();
+        }
+
+        function updateModeVisibility() {
+            grid.style.display = GridMode ? 'block' : 'none';
+            osDice.style.display = (!EditMode && !GridMode) ? 'flex' : 'none';
+            elementChooserButton.style.display = (EditMode || GridMode) ? 'block' : 'none';
+
+            document.querySelectorAll('.page-element').forEach(el => {
+                if (EditMode || GridMode) {
+                    if (!el.querySelector('.remove-element')) {
+                        const removeButton = document.createElement('button');
+                        removeButton.innerHTML = '❌';
+                        removeButton.className = 'remove-element';
+                        removeButton.onclick = () => el.remove();
+                        el.appendChild(removeButton);
+                    }
+                } else {
+                    const removeButton = el.querySelector('.remove-element');
+                    if (removeButton) {
+                        removeButton.remove();
+                    }
+                }
+
+                if (EditMode && GridMode && el.dataset.type.startsWith('attribute')) {
+                    if (!el.querySelector('.shape-cycle')) {
+                        const shapeButton = document.createElement('button');
+                        shapeButton.innerHTML = '🔲';
+                        shapeButton.className = 'shape-cycle';
+                        shapeButton.onclick = () => cycleShape(el);
+                        el.appendChild(shapeButton);
+                    }
+                    if (!el.querySelector('.attribute-cycle')) {
+                        const attributeCycleButton = document.createElement('button');
+                        attributeCycleButton.innerHTML = '➡️';
+                        attributeCycleButton.className = 'attribute-cycle';
+                        attributeCycleButton.onclick = () => cycleAttribute(el);
+                        el.appendChild(attributeCycleButton);
+                    }
+                } else {
+                    const shapeButton = el.querySelector('.shape-cycle');
+                    if (shapeButton) {
+                        shapeButton.remove();
+                    }
+                    const attributeCycleButton = el.querySelector('.attribute-cycle');
+                    if (attributeCycleButton) {
+                        attributeCycleButton.remove();
+                    }
+                }
+            });
+
+            if (EditMode || GridMode) {
+                diceResults.style.display = 'none';
+            } else {
+                updateDiceResultsVisibility();
+            }
+
+            if (GridMode) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function cycleShape(element) {
+            const shapes = ['circle', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'nonagon', 'decagon', 'hendecagon'];
+            const currentShape = element.dataset.shape || 'circle';
+            const nextShapeIndex = (shapes.indexOf(currentShape) + 1) % shapes.length;
+            const nextShape = shapes[nextShapeIndex];
+            element.dataset.shape = nextShape;
+            updateElementShape(element, nextShape);
+        }
+
+        function updateElementShape(element, shape) {
+            const button = element.querySelector('.attribute-button');
+            if (button) {
+                button.style.borderRadius = shape === 'circle' ? '50%' : '0';
+                switch (shape) {
+                    case 'triangle':
+                        button.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
+                        break;
+                    case 'square':
+                        button.style.clipPath = 'none';
+                        break;
+                    case 'pentagon':
+                        button.style.clipPath = 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)';
+                        break;
+                    case 'hexagon':
+                        button.style.clipPath = 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
+                        break;
+                    case 'heptagon':
+                        button.style.clipPath = 'polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)';
+                        break;
+                    case 'octagon':
+                        button.style.clipPath = 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)';
+                        break;
+                    case 'nonagon':
+                        button.style.clipPath = 'polygon(50% 0%, 83% 12%, 100% 43%, 94% 78%, 68% 100%, 32% 100%, 6% 78%, 0% 43%, 17% 12%)';
+                        break;
+                    case 'decagon':
+                        button.style.clipPath = 'polygon(50% 0%, 80% 10%, 100% 35%, 100% 70%, 80% 90%, 50% 100%, 20% 90%, 0% 70%, 0% 35%, 20% 10%)';
+                        break;
+                    case 'hendecagon':
+                        button.style.clipPath = 'polygon(50% 0%, 76% 7%, 94% 26%, 100% 50%, 94% 74%, 76% 93%, 50% 100%, 24% 93%, 6% 74%, 0% 50%, 6% 26%, 24% 7%)';
+                        break;
+                    default:
+                        button.style.clipPath = 'none';
+                }
+            }
+        }
+
+        function cycleAttribute(element) {
+            const currentAttribute = element.querySelector('.attribute-label').textContent;
+            const currentIndex = attributes.indexOf(currentAttribute);
+            const nextIndex = (currentIndex + 1) % attributes.length;
+            const nextAttribute = attributes[nextIndex];
+
+            element.querySelector('.attribute-label').textContent = nextAttribute;
+        }
+
+        function updateDiceResultsVisibility() {
+            if (isPinned) {
+                diceResults.style.display = 'block';
+            } else {
+                diceResults.style.display = 'none';
+                setTimeout(() => {
+                    diceResults.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function addDiceResult(result) {
+            diceResultsContent.innerHTML = result + '<br>' + diceResultsContent.innerHTML;
+            diceResults.style.display = 'block';
+            if (!isPinned) {
+                setTimeout(() => {
+                    diceResults.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        pinButton.addEventListener('click', () => {
+            isPinned = !isPinned;
+            pinButton.textContent = isPinned ? '📍' : '📌';
+            updateDiceResultsVisibility();
+        });
+
+        readyBtn.addEventListener('click', () => {
+            startMenu.style.display = 'none';
+            init();
+        });
+
+        function init() {
+            createGrid();
+            updateLayout();
+            updateModeVisibility();
+        }
+
+        // Call init on page load
+        window.onload = init;
+
+        // Top bar button event listeners remain the same
+        document.getElementById('SaveButton').addEventListener('click', () => {
+            const modal = document.getElementById('save-modal');
+            const saveNameInput = document.getElementById('save-name');
+            const saveBtn = document.getElementById('save-btn');
+
+            saveNameInput.value = FilePrefix + 'Default';
+            modal.style.display = 'block';
+
+            saveBtn.onclick = function() {
+                const saveName = saveNameInput.value;
+                const pageData = {
+                    elements: Array.from(document.querySelectorAll('.page-element')).map(el => ({
+                        type: el.dataset.type,
+                        content: el.innerHTML,
+                        x: el.getAttribute('data-x'),
+                        y: el.getAttribute('data-y'),
+                        width: el.style.width,
+                        height: el.style.height
+                    })),
+                    layout: LayoutType,
+                    grid: boolGrid,
+                    hasStats: boolHasStats,
+                    customTrans: CustomTrans
+                };
+
+                // Save to cookie
+                document.cookie = `${saveName}=${JSON.stringify(pageData)}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
+
+                // Download file
+                const blob = new Blob([JSON.stringify(pageData)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${saveName}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('FolderButton').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const pageData = JSON.parse(e.target.result);
+                    loadPageData(pageData);
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+
+        document.getElementById('LayoutButton').addEventListener('click', toggleEditMode);
+        document.getElementById('LinkButton').addEventListener('click', toggleGridMode);
+
+        document.getElementById('PalButton').addEventListener('click', () => {
+            const modal = document.getElementById('palette-modal');
+            const select = document.getElementById('palette-select');
+            const colorBoxes = document.getElementById('color-boxes');
+            const applyBtn = document.getElementById('apply-palette');
+            const cancelBtn = document.getElementById('cancel-palette');
+
+            // Populate palette choices
+            const palettes = getPalettes();
+            select.innerHTML = palettes.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+
+            function updateColorBoxes() {
+                const selectedPalette = palettes.find(p => p.name === select.value);
+                colorBoxes.innerHTML = selectedPalette.colors.map(color =>
+                    `<div style="width:16px;height:16px;background-color:${color};display:inline-block;margin-right:5px;"></div>`
+                ).join('');
+            }
+
+            select.onchange = updateColorBoxes;
+            updateColorBoxes();
+
+            modal.style.display = 'block';
+
+            applyBtn.onclick = function() {
+                const selectedPalette = palettes.find(p => p.name === select.value);
+                applyPaletteToPage(selectedPalette);
+                modal.style.display = 'none';
+            };
+
+            cancelBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('PicButton').addEventListener('click', () => {
+            const modal = document.getElementById('pic-modal');
+            const portraitBtn = document.getElementById('portrait-btn');
+            const backgroundBtn = document.getElementById('background-btn');
+
+            modal.style.display = 'block';
+
+            portraitBtn.onclick = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function(event) {
+                    const file = event.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const portBox = document.querySelector('.port-box');
+                            if (portBox) {
+                                portBox.style.backgroundImage = `url(${e.target.result})`;
+                                portBox.style.backgroundSize = 'cover';
+                                portBox.style.backgroundPosition = 'center';
+                                portBox.textContent = '';
+                            } else {
+                                createPortBoxElement();
+                                const newPortBox = document.querySelector('.port-box');
+                                newPortBox.style.backgroundImage = `url(${e.target.result})`;
+                                newPortBox.style.backgroundSize = 'cover';
+                                newPortBox.style.backgroundPosition = 'center';
+                                newPortBox.textContent = '';
+                            }
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+                modal.style.display = 'none';
+            };
+
+            backgroundBtn.onclick = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function(event) {
+                    const file = event.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const bgModal = document.getElementById('background-modal');
+                        const bgTypeSelect = document.getElementById('background-type');
+                        const transparencyInput = document.getElementById('transparency');
+                        const saveBgBtn = document.getElementById('save-background');
+
+                        bgModal.style.display = 'block';
+
+                        saveBgBtn.onclick = function() {
+                            const bgType = bgTypeSelect.value;
+                            const transparency = transparencyInput.value;
+
+                            if (bgType === 'behind-elements') {
+                                canvas.style.backgroundImage = `url(${e.target.result})`;
+                                canvas.style.backgroundSize = 'cover';
+                                canvas.style.backgroundPosition = 'center';
+                                document.querySelectorAll('.page-element').forEach(el => {
+                                    el.style.backgroundColor = `rgba(255, 255, 255, ${transparency / 100})`;
+                                });
+                            } else {
+                                document.body.style.backgroundImage = `url(${e.target.result})`;
+                                document.body.style.backgroundSize = 'cover';
+                                document.body.style.backgroundPosition = 'center';
+                                canvas.style.backgroundColor = `rgba(255, 255, 255, ${transparency / 100})`;
+                                document.querySelectorAll('.page-element').forEach(el => {
+                                    el.style.backgroundColor = `rgba(255, 255, 255, ${transparency / 100})`;
+                                });
+                            }
+
+                            bgModal.style.display = 'none';
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+                modal.style.display = 'none';
+            };
+        });
+
+        document.getElementById('SettingsButton').addEventListener('click', () => {
+            const modal = document.getElementById('settings-modal');
+            const mtButton = document.getElementById('mt-button');
+            const statsAssignBtn = document.getElementById('stats-assign-btn');
+            const gridTypeBtn = document.getElementById('grid-type-btn');
+            const customTransInput = document.getElementById('custom-trans');
+            const updatesBtn = document.getElementById('updates-btn');
+
+            mtButton.textContent = LayoutType;
+            statsAssignBtn.textContent = `Stats: ${boolHasStats ? 'On' : 'Off'}`;
+            gridTypeBtn.textContent = `Grid Type: ${boolGrid ? 'Grid' : 'Dots'}`;
+            customTransInput.value = CustomTrans;
+
+            modal.style.display = 'block';
+
+            mtButton.onclick = function() {
+                const layouts = ['PC', 'Side', 'Apple', 'Phone'];
+                const currentIndex = layouts.indexOf(LayoutType);
+                LayoutType = layouts[(currentIndex + 1) % layouts.length];
+                mtButton.textContent = LayoutType;
+                updateLayout();
+            };
+
+            statsAssignBtn.onclick = function() {
+                boolHasStats = !boolHasStats;
+                statsAssignBtn.textContent = `Stats: ${boolHasStats ? 'On' : 'Off'}`;
+                document.querySelectorAll('.attribute-element').forEach(el => {
+                    const diceIcon = el.querySelector('.attribute-label');
+                    diceIcon.textContent = boolHasStats ? el.querySelector('.attribute-label').textContent : '🎲';
+                });
+            };
+
+            gridTypeBtn.onclick = function() {
+                boolGrid = !boolGrid;
+                gridTypeBtn.textContent = `Grid Type: ${boolGrid ? 'Grid' : 'Dots'}`;
+                createGrid();
+            };
+
+            customTransInput.onchange = function() {
+                CustomTrans = parseInt(customTransInput.value);
+                document.querySelectorAll('.page-element').forEach(el => {
+                    el.style.backgroundColor = `rgba(255, 255, 255, ${CustomTrans / 100})`;
+                });
+            };
+
+            updatesBtn.onclick = function() {
+                const updatesModal = document.getElementById('updates-modal');
+                const updatesBox = document.getElementById('updates-box');
+                
+                // Sample updates data
+                const updates = [
+                    { date: '2023-05-15', changes: 'Added grid snap functionality' },
+                    { date: '2023-05-10', changes: 'Implemented new color palettes' },
+                    { date: '2023-05-05', changes: 'Added import from D&D Beyond feature' },
+                    // Add more updates here
+                ];
+
+                updatesBox.innerHTML = updates.map(update => 
+                    `<p><strong>${update.date}</strong>: ${update.changes}</p>`
+                ).join('');
+
+                updatesModal.style.display = 'block';
+            };
+        });
+
+        document.getElementById('HelpButton').addEventListener('click', () => {
+            const modal = document.getElementById('help-modal');
+            const helpContent = document.getElementById('help-content');
+            const nextButton = document.getElementById('help-next');
+
+            const helpText = {
+                '💾': 'Save: Save the current character sheet',
+                '📂': 'Folder: Open a saved character sheet',
+                '🖌️': 'Layout: Toggle edit mode for dragging and resizing elements',
+                '🔗': 'Link: Toggle grid mode for snapping elements to grid',
+                '🎨': 'Palette: Choose a color palette for the sheet',
+                '🖼️': 'Picture: Add portrait or background image',
+                '⚙️': 'Settings: Adjust layout type, stats assignment, and grid type',
+                '❓': 'Help: Show this help information',
+                '🔶': 'More: Show additional options'
+            };
+
+            function showTopBarHelp() {
+                helpContent.innerHTML = Object.entries(helpText).map(([emoji, description]) => 
+                    `<p><strong>${emoji}</strong>: ${description}</p>`
+                ).join('');
+                nextButton.textContent = '➡️';
+                nextButton.onclick = showPageElementHelp;
+            }
+
+            function showPageElementHelp() {
+                helpContent.innerHTML = `
+                    <h3>Page Elements:</h3>
+                    <ul>
+                        <li>Attribute: Individual D&D stat</li>
+                        <li>Grouped Attributes: All six D&D stats in one container</li>
+                        <li>Race Selector: Choose character race</li>
+                        <li>Class Selector: Choose character class</li>
+                        <li>Skills: List of all D&D skills</li>
+                        <li>Port Box: Character portrait</li>
+                        <li>Magic Sheet: Spell list</li>
+                        <li>Background History: Character background</li>
+                        <li>HP: Hit Points</li>
+                        <li>AC: Armor Class</li>
+                        <li>Initiative: Initiative modifier</li>
+                        <li>Rest: Toggle for resting</li>
+                        <li>Advantage: Toggle for advantage</li>
+                        <li>Spell Slots: Available spell slots</li>
+                        <li>Actions: Combat actions</li>
+                        <li>Worn Armor: Equipped armor</li>
+                        <li>Choose Spells Simple: Spell selector</li>
+                        <li>Currency: Character's money</li>
+                        <li>Character Name: Input for character name</li>
+                        <li>Graphics Element: Resizable image container</li>
+                    </ul>
+                `;
+                nextButton.textContent = '⬅️';
+                nextButton.onclick = showTopBarHelp;
+            }
+
+            showTopBarHelp();
+            modal.style.display = 'block';
+        });
+
+        osDice.addEventListener('click', () => {
+            const modal = document.getElementById('dice-roller-modal');
+            const content = document.getElementById('dice-roller-content');
+
+            const diceTypes = [4, 6, 8, 10, 12, 20, 100];
+
+            content.innerHTML = diceTypes.map(type => `
+                <div>
+                    <button class="roll-dice" data-type="${type}">Roll d${type}</button>
+                    <input type="number" min="1" value="1" class="dice-count" data-type="${type}">
+                    <span class="dice-result" data-type="${type}"></span>
+                </div>
+            `).join('');
+
+            modal.style.display = 'block';
+
+            content.addEventListener('click', (event) => {
+                if (event.target.classList.contains('roll-dice')) {
+                    const type = parseInt(event.target.dataset.type);
+                    const count = parseInt(document.querySelector(`.dice-count[data-type="${type}"]`).value);
+                    const results = Array.from({length: count}, () => rollDie(type));
+                    const total = results.reduce((sum, roll) => sum + roll, 0);
+                    document.querySelector(`.dice-result[data-type="${type}"]`).textContent = 
+                        `Result: ${total} (${results.join(', ')})`;
+                    
+                    addDiceResult(`${count}d${type}: ${total} (${results.join(', ')})`);
+                }
+            });
+        });
+
+        elementChooserButton.addEventListener('click', () => {
+            const modal = document.getElementById('element-chooser-modal');
+            const select = document.getElementById('element-select');
+            const addBtn = document.getElementById('add-element');
+            const closeBtn = document.getElementById('close-element-chooser');
+
+            modal.style.display = 'block';
+
+            addBtn.onclick = function() {
+                const selectedElement = select.value;
+                switch (selectedElement) {
+                    case 'Attribute':
+                        createAttributeElement(attributes[Math.floor(Math.random() * attributes.length)]);
+                        break;
+                    case 'Grouped Attributes':
+                        createGroupedAttributesElement();
+                        break;
+                    case 'Race Selector':
+                        createRaceSelectorElement();
+                        break;
+                    case 'Class Selector':
+                        createClassSelectorElement();
+                        break;
+                    case 'Skills':
+                        createSkillsElement();
+                        break;
+                    case 'Port Box':
+                        createPortBoxElement();
+                        break;
+                    case 'Magic Sheet':
+                        createMagicSheetElement();
+                        break;
+                    case 'Background History':
+                        createBackgroundHistoryElement();
+                        break;
+                    case 'Magic Sheet+':
+                        createMagicSheetPlusElement();
+                        break;
+                    case 'HP':
+                        createHPElement();
+                        break;
+                    case 'AC':
+                        createACElement();
+                        break;
+                    case 'Initiative':
+                        createInitElement();
+                        break;
+                    case 'Rest':
+                        createRestElement();
+                        break;
+                    case 'Advantage':
+                        createAdvantageElement();
+                        break;
+                    case 'Spell Slots':
+                        createSpellSlotsElement();
+                        break;
+                    case 'Actions':
+                        createActionsElement();
+                        break;
+                    case 'Worn Armor':
+                        createWornArmorElement();
+                        break;
+                    case 'Choose Spells Simple':
+                        createChooseSpellsSimpleElement();
+                        break;
+                    case 'Currency':
+                        createCurrencyElement();
+                        break;
+                    case 'Character Name':
+                        createCharNameElement();
+                        break;
+                    case 'Graphics Element':
+                        createGraphicsElement();
+                        break;
+                }
+                modal.style.display = 'none';
+            };
+
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+        });
+
+        overflowButton.addEventListener('click', () => {
+            overflowBox.style.display = overflowBox.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('ImportButton').addEventListener('click', () => {
+            // Implement D&D Beyond character import functionality here
+            console.log('Importing character from D&D Beyond');
+            overflowBox.style.display = 'none';
+        });
+
+        // Close modal when clicking on the close button or outside the modal
+        document.querySelectorAll('.modal .close, #overflow-box .close').forEach(closeBtn => {
+            closeBtn.onclick = function() {
+                this.closest('.modal, #overflow-box').style.display = 'none';
+            };
+        });
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+            if (event.target === overflowBox) {
+                overflowBox.style.display = 'none';
+            }
+        };
+
+        function getPalettes() {
+            return [
+                { name: 'Classic', colors: ['#F8F8F8', '#333333', '#FFFFFF', '#000000', '#4A4A4A', '#828282'] },
+                { name: 'Parchment', colors: ['#FFF1E0', '#704214', '#B7916C', '#4B2E0E', '#8C6239', '#D4A76A'] },
+                { name: 'Arcane', colors: ['#1A1A2E', '#16213E', '#0F3460', '#E94560', '#FFFFFF', '#533483'] },
+                { name: 'Nature', colors: ['#E1F0C4', '#6B7F48', '#8FA54D', '#2E4010', '#4A5E2F', '#BACF65'] },
+                { name: 'Dungeon', colors: ['#2C3333', '#395B64', '#A5C9CA', '#E7F6F2', '#2E0F15', '#8B1E3F'] },
+                { name: 'Ethereal', colors: ['#F0EBF4', '#A69CAC', '#474973', '#161B33', '#0D0C1D', '#7C77B9'] },
+                { name: 'Infernal', colors: ['#3D0000', '#950101', '#EC0000', '#FFCCCB', '#FF6666', '#8B0000'] },
+                { name: 'Celestial', colors: ['#E3F2FD', '#90CAF9', '#42A5F5', '#1E88E5', '#1565C0', '#0D47A1'] },
+                { name: 'Fey', colors: ['#F3E5F5', '#CE93D8', '#AB47BC', '#8E24AA', '#6A1B9A', '#4A148C'] },
+                { name: 'Elemental', colors: ['#FFEBEE', '#FFCDD2', '#EF9A9A', '#E57373', '#EF5350', '#F44336'] },
+                { name: 'Shadow', colors: ['#212121', '#424242', '#616161', '#757575', '#9E9E9E', '#BDBDBD'] },
+                { name: 'Dragon', colors: ['#FFF3E0', '#FFE0B2', '#FFCC80', '#FFB74D', '#FFA726', '#FF9800'] },
+                { name: 'Sylvan', colors: ['#E8F5E9', '#C8E6C9', '#A5D6A7', '#81C784', '#66BB6A', '#4CAF50'] },
+                { name: 'Abyssal', colors: ['#311B92', '#4527A0', '#512DA8', '#5E35B1', '#673AB7', '#7E57C2'] },
+                { name: 'Planar', colors: ['#ECEFF1', '#CFD8DC', '#B0BEC5', '#90A4AE', '#78909C', '#607D8B'] },
+                { name: 'Astral', colors: ['#E1F5FE', '#B3E5FC', '#81D4FA', '#4FC3F7', '#29B6F6', '#03A9F4'] },
+                { name: 'Void', colors: ['#000000', '#14213D', '#FCA311', '#E5E5E5', '#FFFFFF', '#4A4E69'] },
+                { name: 'Primal', colors: ['#003049', '#D62828', '#F77F00', '#FCBF49', '#EAE2B7', '#9A8C98'] },
+                { name: 'Cosmic', colors: ['#2B2D42', '#8D99AE', '#EDF2F4', '#EF233C', '#D90429', '#4A4E69'] },
+                { name: 'Eldritch', colors: ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#6FFFE9', '#4A4E69'] },
+                { name: 'Mystical', colors: ['#22223B', '#4A4E69', '#9A8C98', '#C9ADA7', '#F2E9E4', '#9A8C98'] },
+                { name: 'Enchanted', colors: ['#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA', '#ADB5BD', '#6C757D'] },
+                { name: 'Spectral', colors: ['#FADDE1', '#FFC4D6', '#FFA6C1', '#FF87AB', '#FF5D8F', '#FF1B6B'] },
+                { name: 'Mythic', colors: ['#007F5F', '#2B9348', '#55A630', '#80B918', '#AACC00', '#BFD200'] },
+                { name: 'Fabled', colors: ['#540B0E', '#9E2A2B', '#E09F3E', '#FFF3B0', '#335C67', '#9E2A2B'] },
+                { name: 'Legendary', colors: ['#FFB703', '#FB8500', '#023047', '#219EBC', '#8ECAE6', '#126782'] },
+                { name: 'Mythological', colors: ['#FF9F1C', '#FFBF69', '#CBF3F0', '#2EC4B6', '#FFFFFF', '#FF9F1C'] },
+                { name: 'Heroic', colors: ['#E63946', '#F1FAEE', '#A8DADC', '#457B9D', '#1D3557', '#457B9D'] },
+                { name: 'Epic', colors: ['#F72585', '#7209B7', '#3A0CA3', '#4361EE', '#4CC9F0', '#560BAD'] },
+                { name: 'Saga', colors: ['#583101', '#865439', '#B68D40', '#D6AD60', '#EDD382', '#CB997E'] },
+                { name: 'Lore', colors: ['#10002B', '#240046', '#3C096C', '#5A189A', '#7B2CBF', '#9D4EDD'] },
+                { name: 'Folklore', colors: ['#EDC4B3', '#E6B8A2', '#DEAB90', '#D69F7E', '#CD9777', '#C38E70'] },
+                { name: 'Mystic', colors: ['#7400B8', '#6930C3', '#5E60CE', '#5390D9', '#4EA8DE', '#48BFE3'] },
+                { name: 'Arcane Lore', colors: ['#9C89B8', '#F0A6CA', '#EFC3E6', '#F0E6EF', '#B8BEDD', '#9C89B8'] },
+                { name: 'Mythic Tales', colors: ['#FFCBF2', '#F3C4FB', '#ECBCFD', '#E5B3FE', '#E2AFFF', '#DEAAFF'] },
+                { name: 'Fabled Realms', colors: ['#7A5D3F', '#8D6346', '#A16C4E', '#B47A57', '#C88860', '#DBA56E'] },
+                { name: 'Legendary Quests', colors: ['#006466', '#065A60', '#0B525B', '#144552', '#1B3A4B', '#212F45'] },
+                { name: 'Epic Sagas', colors: ['#2F4858', '#33658A', '#86BBD8', '#F6AE2D', '#F26419', '#33658A'] },
+                { name: 'Mythic Legends', colors: ['#00111C', '#001523', '#001A2C', '#002137', '#00253E', '#002945'] },
+                { name: 'Heroic Epics', colors: ['#390099', '#9E0059', '#FF0054', '#FF5400', '#FFBD00', '#9E0059'] },
+                { name: 'Folklore Chronicles', colors: ['#8C1C13', '#BF4342', '#E7D7C1', '#A78A7F', '#735751', '#BF4342'] },
+                { name: 'Mystic Scrolls', colors: ['#D8F3DC', '#B7E4C7', '#95D5B2', '#74C69D', '#52B788', '#40916C'] },
+                { name: 'Arcane Tomes', colors: ['#10002B', '#240046', '#3C096C', '#5A189A', '#7B2CBF', '#9D4EDD'] },
+                { name: 'Occult Grimoires', colors: ['#590D22', '#800F2F', '#A4133C', '#C9184A', '#FF4D6D', '#FF758F'] },
+                { name: 'Esoteric Wisdom', colors: ['#012A4A', '#013A63', '#01497C', '#014F86', '#2A6F97', '#2C7DA0'] },
+                { name: 'Enchanted Realms', colors: ['#FFEDD8', '#F3D5B5', '#E7BC91', '#D4A276', '#BC8A5F', '#A47148'] }
+            ];
+        }
+
+        function applyPaletteToPage(palette) {
+            document.body.style.backgroundColor = palette.colors[0];
+            document.body.style.color = palette.colors[1];
+            canvas.style.backgroundColor = palette.colors[2];
+            document.querySelectorAll('.page-element').forEach(el => {
+                el.style.backgroundColor = palette.colors[3];
+                el.style.color = palette.colors[4];
+                el.style.borderColor = palette.colors[5];
+            });
+        }
+
+        function loadPageData(pageData) {
+            canvas.innerHTML = '';
+            pageData.elements.forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'page-element';
+                div.dataset.type = el.type;
+                div.innerHTML = el.content;
+                div.style.transform = `translate(${el.x}px, ${el.y}px)`;
+                div.style.width = el.width;
+                div.style.height = el.height;
+                div.setAttribute('data-x', el.x);
+                div.setAttribute('data-y', el.y);
+                canvas.appendChild(div);
+
+                interact(div)
+                    .draggable({
+                        inertia: true,
+                        modifiers: [
+                            interact.modifiers.restrictRect({
+                                restriction: 'parent',
+                                endOnly: true
+                            })
+                        ],
+                        autoScroll: true,
+                        listeners: {
+                            move: dragMoveListener,
+                        }
+                    })
+                    .resizable({
+                        edges: { bottom: true, right: true },
+                        listeners: {
+                            move: resizeMoveListener
+                        },
+                    })
+            });
+
+            LayoutType = pageData.layout;
+            boolGrid = pageData.grid;
+            boolHasStats = pageData.hasStats;
+            CustomTrans = pageData.customTrans || 95;
+
+            updateLayout();
+            createGrid();
+            updateModeVisibility();
+        }
+
+        function rollDie(sides) {
+            return Math.floor(Math.random() * sides) + 1;
+        }
+
+        // Initialize the page
+        function init() {
+            createGrid();
+            updateLayout();
+            updateModeVisibility();
+        }
+
+        // Call init on page load
+        window.onload = init;
+    </script>
+</body>
+
+</html>
